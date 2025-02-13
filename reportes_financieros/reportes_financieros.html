@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Ventas - Ventas a Crédito</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      background-color: #00296b;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header img {
+      max-width: 150px;
+    }
+
+    .container {
+      margin-top: 30px;
+      max-width: 1200px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #00509d;
+      text-align: center;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      margin-bottom: 5px;
+      color: #003f88;
+    }
+
+    .form-group input {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+
+    table th {
+      background-color: #003f88;
+      color: white;
+    }
+
+    .submit-btn {
+      padding: 10px 20px;
+      background-color: #00509d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .submit-btn:hover {
+      background-color: #00296b;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 16px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html">Regresar al índice</a>
+  <div class="header">
+    <img src="logo.png.jpg" alt="Logo Tienda de Perfumes">
+  </div>
+
+  <div class="container">
+    <h1>Control de Ventas - Ventas a Crédito</h1>
+
+    <!-- Formulario de búsqueda -->
+    <div class="form-group">
+      <label for="numCliente">Número de Cliente:</label>
+      <input type="text" id="numCliente" placeholder="Ingrese el número del cliente">
+      <button onclick="searchSales()" class="submit-btn">Buscar Ventas</button>
+    </div>
+
+    <!-- Mensaje de error -->
+    <p id="errorMessage" class="error-message" style="display: none;"></p>
+
+    <!-- Tabla que siempre estará visible -->
+    <h2>Ventas del Cliente</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Folio</th>
+          <th>Identificación del Cliente</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Tipo de Pago</th>
+        </tr>
+      </thead>
+      <tbody id="salesDetails">
+        <!-- Los detalles de las ventas se mostrarán aquí -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function searchSales() {
+      const numCliente = document.getElementById('numCliente').value;
+      const errorMessage = document.getElementById('errorMessage');
+
+      try {
+        // Fetch de ventas del cliente
+        const response = await fetch(`http://localhost:3000/ventas?numCliente=${numCliente}`);
+        const salesData = await response.json();
+
+        // Limpiar tabla de ventas antes de agregar nuevos datos
+        const salesDetails = document.getElementById('salesDetails');
+        salesDetails.innerHTML = ''; 
+        errorMessage.style.display = 'none'; // Ocultar el mensaje de error al comenzar la búsqueda
+
+        if (response.ok && salesData.length > 0) {
+          // Iterar sobre las ventas encontradas
+          for (const sale of salesData) {
+            // Fetch de tipo de pago relacionado con la venta (usando el folio de la venta)
+            const paymentResponse = await fetch(`http://localhost:3000/pagos?folio=${sale.Folio}`);
+            const paymentData = await paymentResponse.json();
+
+            // Asegurarse de que se encontraron datos de pago
+            const tipoPago = paymentData.length > 0 ? paymentData[0].TipoPago : 'No especificado';
+
+            // Insertar la venta y el tipo de pago en la tabla
+            salesDetails.innerHTML += `
+              <tr>
+                <td>${sale.Folio}</td>
+                <td>${sale.NumCliente}</td>
+                <td>${sale.Fecha}</td>
+                <td>$${sale.Total.toFixed(2)}</td>
+                <td>${tipoPago}</td>
+              </tr>
+            `;
+          }
+        } else {
+          // Si no se encuentran ventas, mostrar un mensaje en la tabla y el mensaje de error
+          salesDetails.innerHTML = '<tr><td colspan="5">No se encontraron ventas para este cliente.</td></tr>';
+          errorMessage.textContent = 'No se encontraron ventas para el número de cliente ingresado.';
+          errorMessage.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error al obtener datos:', error);
+        alert('Error al obtener los datos de ventas.');
+      }
+    }
+  </script>
+
+</body>
+</html>

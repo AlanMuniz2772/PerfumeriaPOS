@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Pagos - Ventas a Crédito</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      background-color: #00296b; /* Fondo oscuro para el logo */
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header img {
+      max-width: 150px;
+    }
+
+    .container {
+      margin-top: 30px;
+      max-width: 1200px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #00509d; /* Color principal */
+      text-align: center;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      margin-bottom: 5px;
+      color: #003f88;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+
+    table th {
+      background-color: #003f88;
+      color: white;
+    }
+
+    .submit-btn {
+      padding: 10px 20px;
+      background-color: #00509d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .submit-btn:hover {
+      background-color: #00296b;
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html">Regresar al índice</a>
+  <!-- Sección de Logo -->
+  <div class="header">
+    <img src="logo.png.jpg" alt="Logo Tienda de Perfumes"> <!-- Agrega la URL de tu logo aquí -->
+  </div>
+
+  <!-- Contenedor principal -->
+  <div class="container">
+    <h1>Control de Pagos - Ventas a Crédito</h1>
+
+    <!-- Formulario de búsqueda de cliente -->
+    <div class="form-group">
+      <label for="customerID">Identificación del Cliente:</label>
+      <input type="text" id="customerID" placeholder="Ingrese la identificación del cliente">
+      <button onclick="searchCustomer()" class="submit-btn">Buscar Cliente</button>
+    </div>
+
+    <!-- Información del cliente y venta -->
+    <div id="customerInfo" style="display:none;">
+      <h2>Datos del Cliente</h2>
+      <div class="form-group">
+        <label for="customerName">Nombre del Cliente:</label>
+        <input type="text" id="customerName" disabled>
+      </div>
+
+      <div class="form-group">
+        <label for="customerAddress">Dirección:</label>
+        <input type="text" id="customerAddress" disabled>
+      </div>
+
+      <h2>Detalle de Venta</h2>
+      <div class="form-group">
+        <label for="saleFolio">Folio de Venta:</label>
+        <input type="text" id="saleFolio" disabled>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="saleDetails">
+          <!-- Los detalles de la venta se mostrarán aquí -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Formulario de pago parcial -->
+    <div id="paymentSection" style="display:none;">
+      <h2>Registrar Pago Parcial</h2>
+      <div class="form-group">
+        <label for="paymentDate">Fecha del Pago:</label>
+        <input type="date" id="paymentDate">
+      </div>
+
+      <div class="form-group">
+        <label for="paymentAmount">Monto del Pago:</label>
+        <input type="number" id="paymentAmount" placeholder="Ingrese el monto del pago">
+      </div>
+
+      <button onclick="applyPayment()" class="submit-btn">Aplicar Pago</button>
+    </div>
+  </div>
+
+  <script>
+    // Función para buscar al cliente y mostrar los datos de la venta
+    function searchCustomer() {
+      // Lógica para buscar cliente por ID y obtener información
+      // Aquí se conectaría con el backend para obtener los datos del cliente y de la venta a crédito
+      // Simulación de datos:
+      document.getElementById('customerName').value = 'Juan Pérez';
+      document.getElementById('customerAddress').value = 'Calle Falsa 123';
+      document.getElementById('saleFolio').value = 'FV12345';
+
+      // Llenar detalles de la venta
+      const saleDetails = document.getElementById('saleDetails');
+      saleDetails.innerHTML = `
+        <tr>
+          <td>Perfume A</td>
+          <td>2</td>
+          <td>$50.00</td>
+          <td>$100.00</td>
+        </tr>
+        <tr>
+          <td>Perfume B</td>
+          <td>1</td>
+          <td>$75.00</td>
+          <td>$75.00</td>
+        </tr>
+      `;
+
+      // Mostrar secciones de información del cliente y pago
+      document.getElementById('customerInfo').style.display = 'block';
+      document.getElementById('paymentSection').style.display = 'block';
+    }
+
+    // Función para aplicar el pago parcial
+    function applyPayment() {
+      const paymentDate = document.getElementById('paymentDate').value;
+      const paymentAmount = document.getElementById('paymentAmount').value;
+
+      if (paymentDate === '' || paymentAmount === '') {
+        alert('Por favor ingrese la fecha y el monto del pago.');
+        return;
+      }
+
+      // Lógica para aplicar el pago parcial en el backend
+      alert('Pago parcial aplicado correctamente por un monto de $' + paymentAmount);
+    }
+  </script>
+
+</body>
+</html>

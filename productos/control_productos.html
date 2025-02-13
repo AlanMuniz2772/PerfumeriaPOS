@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Productos - Tienda de Perfumes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      background-color: #00296b;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header img {
+      max-width: 150px;
+    }
+
+    h1 {
+      color: #00509d;
+      margin-top: 20px;
+    }
+
+    .form-container, .inventory-container {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin: 20px 0;
+      width: 80%;
+      max-width: 800px;
+    }
+
+    .form-container h2, .inventory-container h2 {
+      color: #003f88;
+    }
+
+    .form-container form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-container label {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .form-container input {
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .form-container button {
+      background-color: #00509d;
+      color: #fff;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    .form-container button:hover {
+      background-color: #003f88;
+    }
+
+    .inventory-container table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .inventory-container th, .inventory-container td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    .inventory-container th {
+      background-color: #00509d;
+      color: #fff;
+    }
+
+    .pagination {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .pagination button {
+      padding: 10px;
+      margin: 0 5px;
+      background-color: #00509d;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .pagination button:hover {
+      background-color: #003f88;
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html">Regresar al índice</a>
+  <div class="header">
+    <img src="logo.png.jpg" alt="Logo Tienda de Perfumes">
+  </div>
+
+  <div class="form-container">
+    <h2>Registrar Nuevo Producto</h2>
+    <form id="productoForm">
+      <label for="codigo">Código del Producto:</label>
+      <input type="text" id="codigo" name="codigo" required>
+
+      <label for="descripcion">Descripción del Producto:</label>
+      <input type="text" id="descripcion" name="descripcion" required>
+
+      <label for="cantidad">Cantidad de Piezas:</label>
+      <input type="number" id="cantidad" name="cantidad" required>
+
+      <label for="precioCompra">Precio de Compra:</label>
+      <input type="number" step="0.01" id="precioCompra" name="precioCompra" required>
+
+      <label for="precioVenta">Precio de Venta:</label>
+      <input type="number" step="0.01" id="precioVenta" name="precioVenta" required>
+
+      <button type="submit">Registrar Producto</button>
+    </form>
+  </div>
+
+  <div class="inventory-container">
+    <h2>Inventario de Productos</h2>
+    <table id="productosTable">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th>Cantidad</th>
+          <th>Precio de Compra</th>
+          <th>Precio de Venta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Aquí se insertarán los productos dinámicamente -->
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <button id="prevPageBtn" disabled>Anterior</button>
+      <button id="nextPageBtn">Siguiente</button>
+    </div>
+  </div>
+
+  <script>
+    const apiUrl = 'http://localhost:3000/productos';
+    let currentPage = 1;
+    const productsPerPage = 5;
+    let totalProducts = 0;
+
+    document.addEventListener('DOMContentLoaded', fetchProductos);
+
+    // Agregar o actualizar producto
+    document.getElementById('productoForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const producto = {
+        codigo: parseInt(document.getElementById('codigo').value) ,
+        descripcion: document.getElementById('descripcion').value,
+        precioCompra: parseFloat(document.getElementById('precioCompra').value),
+        precioVenta: parseFloat(document.getElementById('precioVenta').value),
+        cantidad: parseInt(document.getElementById('cantidad').value),
+      };
+
+      await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(producto),
+      });
+
+      document.getElementById('productoForm').reset();
+      fetchProductos();
+    });
+
+    // Obtener productos y crear tabla
+    async function fetchProductos() {
+      const response = await fetch(apiUrl);
+      const productos = await response.json();
+      totalProducts = productos.length;
+
+      const startIndex = (currentPage - 1) * productsPerPage;
+      const endIndex = startIndex + productsPerPage;
+      const paginatedProducts = productos.slice(startIndex, endIndex);
+
+      const tbody = document.querySelector('#productosTable tbody');
+      tbody.innerHTML = '';
+      paginatedProducts.forEach(producto => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${producto.Codigo}</td>
+          <td>${producto.Descripcion}</td>
+          <td>${producto.Cantidad}</td>
+          <td>${producto.PrecioCompra}</td>
+          <td>${producto.PrecioVenta}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('prevPageBtn').disabled = currentPage === 1;
+      document.getElementById('nextPageBtn').disabled = endIndex >= totalProducts;
+    }
+
+    // Manejar botones de paginación
+    document.getElementById('prevPageBtn').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        fetchProductos();
+      }
+    });
+
+    document.getElementById('nextPageBtn').addEventListener('click', () => {
+      if ((currentPage * productsPerPage) < totalProducts) {
+        currentPage++;
+        fetchProductos();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menú Principal - Tienda de Perfumes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      background-color: #00296b; /* Fondo oscuro para el logo */
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header img {
+      max-width: 150px;
+    }
+
+    .menu-container {
+      text-align: center;
+      margin-top: 30px;
+      width: 100%;
+    }
+
+    h1 {
+      color: green; /* Color principal */
+    }
+
+    .menu {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .menu-item {
+      background-color: green; /* Color del bloque del menú */
+      color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+
+    .menu-item:hover {
+      transform: translateY(-5px);
+      background-color: green; /* Cambio de color en hover */
+    }
+
+    .menu-item h2 {
+      margin: 0 0 10px 0;
+    }
+
+    .menu-item p {
+      color: #ddd;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sección de Logo -->
+  
+
+  <!-- Contenedor del Menú -->
+  <div class="menu-container">
+    <h1>Menú Principal</h1>
+    <div class="menu">
+      <div class="menu-item" onclick="navigateTo('./clientes/control_clientes.html')">
+        <h2>Administración de Clientes</h2>
+        <p>Gestión de clientes del negocio</p>
+      </div>
+      <div class="menu-item" onclick="navigateTo('./productos/control_productos.html')">
+        <h2>Productos y Proveedores</h2>
+        <p>Control de productos y proveedores</p>
+      </div>
+      <div class="menu-item" onclick="navigateTo('./ventas/control_ventas.html')">
+        <h2>Ventas</h2>
+        <p>Ventas de crédito y contado</p>
+      </div>
+      <div class="menu-item" onclick="navigateTo('./control_pagos/control_pagos.html')">
+        <h2>Control de Pagos</h2>
+        <p>Pagos de clientes en ventas de crédito</p>
+      </div>
+      <div class="menu-item" onclick="navigateTo('./reportes_financieros/reportes_financieros.html')">
+        <h2>Reportes Financieros</h2>
+        <p>Reportes de ventas realizadas</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function navigateTo(page) {
+      window.location.href = page;  // Redirige a la página correspondiente
+    }
+  </script>
+
+</body>
+</html>
