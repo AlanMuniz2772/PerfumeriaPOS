@@ -1,0 +1,68 @@
+/* Fondo con degradado */
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(to right, #001f3f, #003366);
+    font-family: Arial, sans-serif;
+    box-sizing: border-box; /* Asegura que el padding y margin no afecten al tamaño */
+  }
+  
+  /* Contenedor del formulario */
+  .login-container {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 100%;
+    max-width: 350px; /* Limita el ancho máximo */
+  }
+  
+  /* Título */
+  .login-form h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+  }
+  
+  /* Etiquetas */
+  .login-form label {
+    display: block;
+    text-align: left;
+    font-weight: bold;
+    margin-top: 10px;
+    color: #444;
+  }
+  
+  /* Campos de entrada */
+  .login-form input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  
+  /* Botón de enviar */
+  .login-form button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 10px;
+    font-size: 18px;
+    color: white;
+    background: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  /* Efecto hover del botón */
+  .login-form button:hover {
+    background: #0056b3;
+  }
+  

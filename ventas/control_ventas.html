@@ -4,113 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Ventas - Tienda de Perfumes</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .header {
-      background-color: #00296b;
-      width: 100%;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .header img {
-      max-width: 150px;
-    }
-
-    h1 {
-      color: #00509d;
-      margin-top: 20px;
-    }
-
-    .form-container, .search-container, .venta-container, .ticket-container {
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin: 20px 0;
-      width: 80%;
-      max-width: 800px;
-    }
-
-    .form-container h2, .search-container h2, .venta-container h2, .ticket-container h2 {
-      color: #003f88;
-    }
-
-    form {
-      display: flex;
-      flex-direction: column;
-    }
-
-    label {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    input, select {
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    button {
-      background-color: #00509d;
-      color: #fff;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      margin-top: 20px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #003f88;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #00509d;
-      color: #fff;
-    }
-
-    .ticket {
-      border: 2px solid #003f88;
-      padding: 10px;
-      margin-top: 20px;
-    }
-  </style>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <a href="../index.html">Regresar al índice</a>
+
   <div class="header">
-    <img src="logo.png.jpg" alt="Logo Tienda de Perfumes">
+    <img src="/imagenes/logo.jpg" alt="Logo Tienda de Perfumes">
   </div>
+  <a href="../index.html" class="back-button">← Regresar al índice</a>
 
   <div class="search-container">
     <h2>Buscar Cliente</h2>
     <form id="buscarClienteForm">
       <label for="clienteNombre">Nombre del Cliente:</label>
-      <input type="text" id="clienteNombre" name="clienteNombre" hidden>
+      <input type="text" id="clienteNombre" name="clienteNombre">
       <button type="submit">Buscar</button>
     </form>
 
@@ -145,9 +52,7 @@
       </div>
 
       <h3>Agregar Productos</h3>
-      <div id="productosVendidos">
-        <!-- Se agregarán productos aquí dinámicamente -->
-      </div>
+      <div id="productosVendidos"></div>
 
       <label for="productoSelect">Seleccionar Producto:</label>
       <select id="productoSelect"></select>
@@ -165,41 +70,14 @@
 
   <div class="ticket-container">
     <h2>Ticket de Venta</h2>
-    <div class="ticket" id="ticketVenta">
-      <!-- Ticket generado dinámicamente -->
-    </div>
+    <div class="ticket" id="ticketVenta"></div>
   </div>
 
   <script>
-    let productos = []; // Arreglo para almacenar productos desde la base de datos
-    let clienteSeleccionado = null;
-    let productosVendidos = [];
-    let montoTotal = 0;
-
-    // Función para obtener productos desde la base de datos
-    fetch('http://localhost:3000/productos') // URL donde se obtiene la lista de productos
-      .then(response => response.json())
-      .then(data => {
-        productos = data;
-        const productoSelect = document.getElementById('productoSelect');
-        productos.forEach((producto, index) => {
-          const option = document.createElement('option');
-          option.value = index;
-          option.textContent = `${producto.Descripcion} - Precio: $${producto.PrecioVenta.toFixed(2)}`;
-          productoSelect.appendChild(option);
-        });
-      })
-      .catch(error => {
-        console.error('Error al obtener los productos:', error);
-      });
-
-    // Función para mostrar la sección de crédito si se selecciona "Crédito"
     document.getElementById('tipoVenta').addEventListener('change', function() {
-      const tipoVenta = this.value;
-      document.getElementById('creditoSection').style.display = tipoVenta === 'credito' ? 'block' : 'none';
+      document.getElementById('creditoSection').style.display = this.value === 'credito' ? 'block' : 'none';
     });
 
-    // Función para buscar un cliente
     document.getElementById('buscarClienteForm').addEventListener('submit', function (e) {
       e.preventDefault();
       const clienteNombre = document.getElementById('clienteNombre').value.toLowerCase();
@@ -208,9 +86,8 @@
         .then(response => response.json())
         .then(data => {
           if (data.length > 0) {
-            // Mostrar selección de clientes
             const seleccionarCliente = document.getElementById('seleccionarCliente');
-            seleccionarCliente.innerHTML = ''; // Limpiar opciones anteriores
+            seleccionarCliente.innerHTML = '';
 
             data.forEach((cliente, index) => {
               const option = document.createElement('option');
@@ -222,22 +99,17 @@
             document.getElementById('seleccionarClienteDiv').style.display = 'block';
             seleccionarCliente.addEventListener('change', function () {
               const selectedIndex = this.value;
-              clienteSeleccionado = data[selectedIndex];
-              mostrarInformacionCliente(clienteSeleccionado);
+              mostrarInformacionCliente(data[selectedIndex]);
             });
 
-            // Mostrar información del primer cliente por defecto
-            clienteSeleccionado = data[0];
-            mostrarInformacionCliente(clienteSeleccionado);
+            mostrarInformacionCliente(data[0]);
           } else {
             alert('Cliente no encontrado');
             document.getElementById('seleccionarClienteDiv').style.display = 'none';
             document.getElementById('clienteInfo').style.display = 'none';
           }
         })
-        .catch(error => {
-          console.error('Error al obtener los datos del cliente:', error);
-        });
+        .catch(error => console.error('Error al obtener los datos del cliente:', error));
     });
 
     function mostrarInformacionCliente(cliente) {
@@ -246,100 +118,6 @@
       document.getElementById('clienteTelefono').textContent = cliente.telefono;
       document.getElementById('clienteInfo').style.display = 'block';
     }
-
-    // Función para agregar un producto
-    document.getElementById('agregarProductoBtn').addEventListener('click', function() {
-      const productoIndex = document.getElementById('productoSelect').value;
-      const cantidadVendida = parseInt(document.getElementById('cantidad').value);
-      const producto = productos[productoIndex];
-
-      if (cantidadVendida > producto.Cantidad) {
-        alert('No hay suficiente stock para este producto.');
-        return;
-      }
-
-      const totalProducto = cantidadVendida * producto.PrecioVenta;
-
-      productosVendidos.push({
-       hidden : true, codigo: producto.Codigo,
-        descripcion: producto.Descripcion,
-        cantidad: cantidadVendida,
-        precio: producto.PrecioVenta
-      });
-
-      montoTotal += totalProducto;
-      document.getElementById('montoTotal').textContent = montoTotal.toFixed(2);
-
-      // Actualizar la lista de productos vendidos
-      const productoDiv = document.createElement('div');
-      productoDiv.textContent = `Producto: ${producto.Codigo}, ${producto.Descripcion}, Cantidad: ${cantidadVendida}, Precio Total: $${totalProducto.toFixed(2)}`;
-      document.getElementById('productosVendidos').appendChild(productoDiv);
-    });
-
-    // Función para finalizar la venta
-    document.getElementById('ventaForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      if (!clienteSeleccionado) {
-        alert('Por favor, seleccione un cliente antes de finalizar la venta.');
-        return;
-      }
-
-      const fechaVenta = document.getElementById('fechaVenta').value;
-      const tipoVenta = document.getElementById('tipoVenta').value;
-      const importeInicial = tipoVenta === 'credito' ? document.getElementById('importeInicial').value : null;
-
-      // Generar ticket de venta
-      const ticketDiv = document.getElementById('ticketVenta');
-      ticketDiv.innerHTML = `
-        <h3>Folio: ${Math.floor(Math.random() * 100000)}</h3>
-        <p>Cliente: ${clienteSeleccionado.Nombre}</p>
-        <p>Dirección: ${clienteSeleccionado.Direccion}</p>
-        <p>Teléfono: ${clienteSeleccionado.telefono}</p>
-        <p>Fecha: ${fechaVenta}</p>
-        <p>Tipo de Venta: ${tipoVenta}</p>
-        ${importeInicial ? `<p>Importe Inicial: $${importeInicial}</p>` : ''}
-        <h4>Detalle de Productos:</h4>
-        <ul>
-          ${productosVendidos.map(p => `<li> ${p.codigo} ${p.descripcion} - Cantidad: ${p.cantidad}, Precio: $${p.precio.toFixed(2)}</li>`).join('')}
-        </ul>
-        <h3>Total de la Venta: $${montoTotal.toFixed(2)}</h3>
-      `;
-
-      // Actualizar stock de productos en la base de datos
-      const actualizaciones = productosVendidos.map(p => {
-        const producto = productos.find(prod => prod.codigo === p.codigo);
-        return fetch(`http://localhost:3000/productos?codigo=${producto}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ Cantidad: producto.Cantidad - p.Cantidad })
-        });
-      });
-
-      // Esperar a que se actualicen todos los productos
-      Promise.all(actualizaciones)
-        .then(responses => {
-          return Promise.all(responses.map(response => response.json()));
-        })
-        .then(updatedProducts => {
-          console.log('Productos actualizados:', updatedProducts);
-          // Limpiar el formulario y reiniciar variables
-          document.getElementById('ventaForm').reset();
-          productosVendidos = [];
-          montoTotal = 0;
-          document.getElementById('productosVendidos').innerHTML = '';
-          document.getElementById('montoTotal').textContent = '0.00';
-        })
-        .catch(error => {
-          console.error('Error al actualizar los productos:', error);
-        });
-    });
   </script>
-
 </body>
 </html>
-
-
-

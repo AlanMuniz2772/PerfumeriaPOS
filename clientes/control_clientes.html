@@ -3,225 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Clientes - Tienda de Perfumes</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .header {
-      background-color: #00296b; /* Fondo oscuro para el logo */
-      width: 100%;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .header img {
-      max-width: 150px;
-    }
-
-    h1 {
-      color: #00509d; /* Color principal */
-      margin-top: 20px;
-    }
-
-    .form-container, .report-container {
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin: 20px 0;
-      width: 80%;
-      max-width: 800px;
-    }
-
-    .form-container h2, .report-container h2 {
-      color: #003f88;
-    }
-
-    .form-container form {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-container label {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    .form-container input {
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    .form-container button {
-      background-color: #00509d;
-      color: #fff;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      margin-top: 20px;
-      cursor: pointer;
-    }
-
-    .form-container button:hover {
-      background-color: #003f88;
-    }
-
-    .report-container table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .report-container th, .report-container td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: left;
-    }
-
-    .report-container th {
-      background-color: #00509d;
-      color: #fff;
-    }
-
-    .report-container button {
-      background-color: #00509d;
-      color: #fff;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-
-    .report-container button:hover {
-      background-color: #003f88;
-    }
-  </style>
+  <title>Registro de Cliente - Tienda de Perfumes</title>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <a href="../index.html">Regresar al índice</a>
-  <!-- Sección de Logo -->
+  
   <div class="header">
-    <img src="logo.png.jpg" alt="Logo Tienda de Perfumes">
+    <img src="/imagenes/logo.jpg" alt="Logo Tienda de Perfumes">
   </div>
+  <a href="../index.html" class="back-button">← Regresar al índice</a>
 
-  <!-- Contenedor del formulario para agregar nuevos clientes -->
   <div class="form-container">
-    <h2>Registrar Nuevo Cliente</h2>
+    <h2>Registrar Cliente</h2>
     <form id="clienteForm">
-      <label for="nombre">Nombre Completo:</label>
-      <input type="text" id="nombre" name="nombre" required>
+      <label for="nombreCliente">Nombre:</label>
+      <input type="text" id="nombreCliente" name="nombreCliente" required>
 
-      <label for="direccion">Dirección:</label>
-      <input type="text" id="direccion" name="direccion" required>
+      <label for="direccionCliente">Dirección:</label>
+      <input type="text" id="direccionCliente" name="direccionCliente" required>
 
-      <label for="telefono">Teléfono:</label>
-      <input type="text" id="telefono" name="telefono" required>
+      <label for="telefonoCliente">Teléfono:</label>
+      <input type="tel" id="telefonoCliente" name="telefonoCliente" required>
 
       <button type="submit">Registrar Cliente</button>
     </form>
   </div>
 
-  <!-- Contenedor del reporte de clientes -->
-  <div class="report-container">
-    <h2>Padrón de Clientes</h2>
-    <table id="clientesTable">
-      <thead>
-        <tr>
-          <th>Número de Cliente</th>
-          <th>Nombre Completo</th>
-          <th>Dirección</th>
-          <th>Teléfono</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Aquí se insertarán los clientes dinámicamente -->
-      </tbody>
-    </table>
-    <button onclick="exportarPDF()">Exportar a PDF</button>
-  </div>
-
   <script>
-    // URL de la API
-    const apiUrl = 'http://localhost:3000/clientes';
-    
-    // Leer clientes al cargar la página
-    document.addEventListener('DOMContentLoaded', fetchClientes);
-
-    // Agregar o actualizar cliente
-    document.getElementById('clienteForm').addEventListener('submit', async (event) => {
-      event.preventDefault();
+    document.getElementById('clienteForm').addEventListener('submit', function(e) {
+      e.preventDefault();
 
       const cliente = {
-        nombre: document.getElementById('nombre').value,
-        direccion: document.getElementById('direccion').value,
-        telefono: document.getElementById('telefono').value,
+        nombre: document.getElementById('nombreCliente').value,
+        direccion: document.getElementById('direccionCliente').value,
+        telefono: document.getElementById('telefonoCliente').value
       };
 
-      // Agregar cliente
-      await fetch(apiUrl, {
+      fetch('http://localhost:3000/clientes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cliente),
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(cliente)
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert('Cliente registrado exitosamente');
+        document.getElementById('clienteForm').reset();
+      })
+      .catch(error => {
+        console.error('Error al registrar el cliente:', error);
       });
-
-      document.getElementById('clienteForm').reset();
-      fetchClientes();
     });
-
-    // Obtener clientes y crear tabla
-    async function fetchClientes() {
-      const response = await fetch(apiUrl);
-      const clientes = await response.json();
-      const tbody = document.querySelector('#clientesTable tbody');
-      tbody.innerHTML = '';
-      clientes.forEach(cliente => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${cliente.NumCliente}</td>
-          <td>${cliente.Nombre}</td>
-          <td>${cliente.Direccion}</td>
-          <td>${cliente.telefono}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Función para exportar la tabla a PDF
-    function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      doc.text('Padrón de Clientes', 20, 20);
-
-      const filas = [];
-      const clientes = document.querySelectorAll('#clientesTable tbody tr');
-      clientes.forEach(cliente => {
-        const celdas = cliente.querySelectorAll('td');
-        filas.push(Array.from(celdas).map(celda => celda.textContent));
-      });
-
-      doc.autoTable({
-        head: [['Número de Cliente', 'Nombre Completo', 'Dirección', 'Teléfono']],
-        body: filas,
-      });
-
-      doc.save('padron_clientes.pdf');
-    }
   </script>
-
-  <!-- Agrega la librería jsPDF y AutoTable para la exportación a PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
-
 </body>
 </html>
