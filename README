@@ -1,7 +1,8 @@
-node -v
-npm -v
+Primero instala Node.js en tu equipo
 
-npm init -y
-npm install electron --save-dev
+En terminal del proyecto escribe npm install (esto automaticamente instalara todas las dependecias)
 
-npm install express mysql2
+Para ejecuartlo escribe en la terminal  npx electron .
+
+
+
