@@ -7,8 +7,8 @@ app.use(express.json());
 const db = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "2187",
-    database: "punto_de_venta"
+    password: "fn-2187",
+    database: "perfumeria"
 });
 
 db.connect(err => {
@@ -16,8 +16,8 @@ db.connect(err => {
     console.log("Conectado a MySQL");
 });
 
-app.get("/productos", (req, res) => {
-    db.query("SELECT * FROM productos", (err, results) => {
+app.get("/clientes", (req, res) => {
+    db.query("SELECT * FROM CLIENTES", (err, results) => {
         if (err) throw err;
         res.json(results);
     });
