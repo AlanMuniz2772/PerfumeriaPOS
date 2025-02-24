@@ -28,23 +28,27 @@
       <tbody id="productosTable"></tbody>
   </div>
 
-  <script>
-    fetch('http://localhost:3000/productos')
-      .then(response => response.json())
-      .then(data => {
-        const tableBody = document.getElementById("productosTable");
-        data.forEach(producto => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${producto.NOMBRE}</td>
-            <td>${producto.DESCRIPCION}</td>
-            <td>${producto.PRECIOCOMPRA}</td>
-            <td>${producto.PRECIOVENTA}</td>
-          `;
-          tableBody.appendChild(row);
-        });
-      })
-      .catch(error => console.error("Error cargando productos:", error));
-  </script>
+  <a href="../src/agregar_producto.html" class="back-button">+Agregar Producto</a>
+
+  
 </body>
 </html>
+
+<script>
+  fetch('http://localhost:3000/productos')
+    .then(response => response.json())
+    .then(data => {
+      const tableBody = document.getElementById("productosTable");
+      data.forEach(producto => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${producto.NOMBRE}</td>
+          <td>${producto.DESCRIPCION}</td>
+          <td>${producto.PRECIOCOMPRA}</td>
+          <td>${producto.PRECIOVENTA}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    })
+    .catch(error => console.error("Error cargando productos:", error));
+</script>

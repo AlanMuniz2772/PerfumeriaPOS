@@ -11,13 +11,13 @@
   <div class="header">
     <img src="/imagenes/logo.jpg"alt="Logo Tienda de Perfumes">
   </div>
-  <a href="../index.html" class="back-button">← Regresar al índice</a>
+  <a href="../src/control_productos.html" class="back-button">← Regresar al listado</a>
 
   <div class="form-container">
     <h2>Registrar Producto</h2>
     <form id="productoForm">
-      <label for="codigoProducto">Código:</label>
-      <input type="text" id="codigoProducto" name="codigoProducto" required>
+      <label for="nombreProducto">Nombre:</label>
+      <input type="text" id="nombreProducto" name="nombreProducto" required>
 
       <label for="descripcionProducto">Descripción:</label>
       <input type="text" id="descripcionProducto" name="descripcionProducto" required>
@@ -25,44 +25,53 @@
       <label for="cantidadProducto">Cantidad:</label>
       <input type="number" id="cantidadProducto" name="cantidadProducto" value="1" min="1" required>
 
+      <label for="precioCompraProducto">Precio de Compra:</label>
+      <input type="number" id="precioCompraProducto" name="precioCompraProducto" step="0.01" required>
+      
       <label for="precioVentaProducto">Precio de Venta:</label>
       <input type="number" id="precioVentaProducto" name="precioVentaProducto" step="0.01" required>
 
-      <label for="precioCompraProducto">Precio de Compra:</label>
-      <input type="number" id="precioCompraProducto" name="precioCompraProducto" step="0.01" required>
+      
 
       <button type="submit">Registrar Producto</button>
     </form>
   </div>
 
-  <script>
-    document.getElementById('productoForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      const producto = {
-        codigo: document.getElementById('codigoProducto').value,
-        descripcion: document.getElementById('descripcionProducto').value,
-        cantidad: parseInt(document.getElementById('cantidadProducto').value),
-        precioVenta: parseFloat(document.getElementById('precioVentaProducto').value),
-        precioCompra: parseFloat(document.getElementById('precioCompraProducto').value)
-      };
-
-      fetch('http://localhost:3000/productos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(producto)
-      })
-      .then(response => response.json())
-      .then(data => {
-        alert('Producto registrado exitosamente');
-        document.getElementById('productoForm').reset();
-      })
-      .catch(error => {
-        console.error('Error al registrar el producto:', error);
-      });
-    });
-  </script>
 </body>
 </html>
+
+<script>
+  document.getElementById('productoForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const producto = {
+      nombre: document.getElementById('nombreProducto').value,
+      descripcion: document.getElementById('descripcionProducto').value,
+      cantidad: parseInt(document.getElementById('cantidadProducto').value),
+      preciocompra: parseFloat(document.getElementById('precioCompraProducto').value),
+      precioventa: parseFloat(document.getElementById('precioVentaProducto').value),
+    };
+
+    fetch('http://localhost:3000/registrar_producto', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(producto)
+    })
+    .then(response => {
+    if (!response.ok) {
+      throw new Error("Error en la respuesta del servidor");
+    }
+    return response.json();
+    })
+    .then(data => {
+    alert('Producto registrado exitosamente');
+    document.getElementById('productoForm').reset();
+    window.location.href = '../src/control_productos.html';
+    })
+    .catch(error => {
+      console.error('Error al registrar el producto:', error);
+    });
+  });
+</script>

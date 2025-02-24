@@ -60,10 +60,10 @@ app.post("/registrar_producto", (req, res) => {
     db.query(sql, valores, (err, result) => {
         if (err) {
             console.error("Error al insertar productos:", err);
-            res.status(500).json({ error: "Error al registrar el cliente" });
+            res.status(500).json({ error: "Error al registrar el producto" });
             return;
         }
-        res.json({ mensaje: "Cliente registrado correctamente", id: result.insertId });
+        res.json({ mensaje: "Producto registrado correctamente", id: result.insertId });
     });
 });
 
