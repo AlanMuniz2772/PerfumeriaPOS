@@ -37,8 +37,6 @@
   <div class="venta-container">
     <h2>Registrar Venta</h2>
     <form id="ventaForm">
-      <label for="fechaVenta">Fecha de la Venta:</label>
-      <input type="date" id="fechaVenta" name="fechaVenta" required>
 
       <label for="tipoVenta">Tipo de Venta:</label>
       <select id="tipoVenta" name="tipoVenta" required>
@@ -74,50 +72,28 @@
   </div>
 
   <script>
-    document.getElementById('tipoVenta').addEventListener('change', function() {
-      document.getElementById('creditoSection').style.display = this.value === 'credito' ? 'block' : 'none';
-    });
+    const venta = {
+    IDCLIENTE: 1,
+    IDTIPO: 2,
+    SALDOABONADO: 500.00,
+    VENTATOTAL: 1500.00,
+    productos: [
+        { IDPRODUCTOS: 1, CANTPRODUCTOS: 2 },
+        { IDPRODUCTOS: 3, CANTPRODUCTOS: 1 }
+    ]
+};
 
-    document.getElementById('buscarClienteForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      const clienteNombre = document.getElementById('clienteNombre').value.toLowerCase();
+fetch("http://localhost:3000/registrar_venta", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify(venta)
+})
+.then(response => response.json())
+.then(data => console.log("Venta registrada:", data))
+.catch(error => console.error("Error al registrar la venta:", error));
 
-      fetch(`http://localhost:3000/clientes?NOMBRE=${clienteNombre}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.length > 0) {
-            const seleccionarCliente = document.getElementById('seleccionarCliente');
-            seleccionarCliente.innerHTML = '';
-
-            data.forEach((cliente, index) => {
-              const option = document.createElement('option');
-              option.value = index;
-              option.textContent = `${cliente.Nombre} - ${cliente.Direccion}`;
-              seleccionarCliente.appendChild(option);
-            });
-
-            document.getElementById('seleccionarClienteDiv').style.display = 'block';
-            seleccionarCliente.addEventListener('change', function () {
-              const selectedIndex = this.value;
-              mostrarInformacionCliente(data[selectedIndex]);
-            });
-
-            mostrarInformacionCliente(data[0]);
-          } else {
-            alert('Cliente no encontrado');
-            document.getElementById('seleccionarClienteDiv').style.display = 'none';
-            document.getElementById('clienteInfo').style.display = 'none';
-          }
-        })
-        .catch(error => console.error('Error al obtener los datos del cliente:', error));
-    });
-
-    function mostrarInformacionCliente(cliente) {
-      document.getElementById('clienteNombreInfo').textContent = cliente.Nombre;
-      document.getElementById('clienteDireccion').textContent = cliente.Direccion;
-      document.getElementById('clienteTelefono').textContent = cliente.telefono;
-      document.getElementById('clienteInfo').style.display = 'block';
-    }
   </script>
 </body>
 </html>

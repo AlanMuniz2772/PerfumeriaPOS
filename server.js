@@ -67,6 +67,70 @@ app.post("/registrar_producto", (req, res) => {
     });
 });
 
+// Registrar una venta
+app.post("/registrar_venta", (req, res) => {
+    const { IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, productos } = req.body;
+
+    if (!productos || productos.length === 0) {
+        return res.status(400).json({ error: "Debe haber al menos un producto en la venta" });
+    }
+
+    db.beginTransaction(err => {
+        if (err) {
+            return res.status(500).json({ error: "Error al iniciar la transacción" });
+        }
+
+        // Insertar en VENTAS
+        const sqlVenta = "INSERT INTO VENTAS (IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, FECHA) VALUES (?, ?, ?, ?, NOW())";
+        db.query(sqlVenta, [IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL], (err, result) => {
+            if (err) {
+                return db.rollback(() => {
+                    res.status(500).json({ error: "Error al registrar la venta" });
+                });
+            }
+
+            const IDVENTA = result.insertId;
+
+            // Insertar en VENTAS_has_PRODUCTOS y actualizar stock
+            const sqlDetalle = "INSERT INTO VENTAS_has_PRODUCTOS (IDVENTA, IDPRODUCTOS, CANTPRODUCTOS) VALUES ?";
+            const valoresDetalle = productos.map(p => [IDVENTA, p.IDPRODUCTOS, p.CANTPRODUCTOS]);
+
+            db.query(sqlDetalle, [valoresDetalle], (err) => {
+                if (err) {
+                    return db.rollback(() => {
+                        res.status(500).json({ error: "Error al registrar los productos en la venta" });
+                    });
+                }
+
+                // Actualizar stock en PRODUCTOS
+                const sqlActualizarStock = "UPDATE PRODUCTOS SET CANTIDAD = CANTIDAD - ? WHERE IDPRODUCTOS = ?";
+                const queries = productos.map(p => new Promise((resolve, reject) => {
+                    db.query(sqlActualizarStock, [p.CANTPRODUCTOS, p.IDPRODUCTOS], (err, result) => {
+                        if (err) reject(err);
+                        else resolve(result);
+                    });
+                }));
+
+                Promise.all(queries)
+                    .then(() => {
+                        db.commit(err => {
+                            if (err) {
+                                return db.rollback(() => {
+                                    res.status(500).json({ error: "Error al confirmar la transacción" });
+                                });
+                            }
+                            res.json({ mensaje: "Venta registrada correctamente", IDVENTA });
+                        });
+                    })
+                    .catch(err => {
+                        db.rollback(() => {
+                            res.status(500).json({ error: "Error al actualizar el stock" });
+                        });
+                    });
+            });
+        });
+    });
+});
 
 
 

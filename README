@@ -6,3 +6,10 @@ Para ejecuartlo escribe en la terminal  npx electron .
 
 
 
+
+
+Buscar la tarea que use el puerto 3000: 
+netstat -aon | findstr :3000
+
+Matar el proceso que use el puerto 3000:
+taskkill /F /PID <PID>
