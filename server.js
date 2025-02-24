@@ -34,10 +34,10 @@ app.get("/productos", (req, res) => {
 
 //POSTS
 app.post("/registrar_cliente", (req, res) => {
-    const { NOMBRE, APATERNO, AMATERNO, COLONIA, CALLE, NUMERO, TELEFONO } = req.body;
+    const { nombre, apaterno, amaterno, colonia, calle, numero, telefono } = req.body;
 
     const sql = "INSERT INTO CLIENTES (nombre, apaterno, amaterno, colonia, calle, numero, telefono) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    const valores = [NOMBRE, APATERNO, AMATERNO, COLONIA, CALLE, NUMERO, TELEFONO];
+    const valores = [nombre, apaterno, amaterno, colonia, calle, numero, telefono];
 
     db.query(sql, valores, (err, result) => {
         if (err) {
