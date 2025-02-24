@@ -1,60 +1,53 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de Cliente - Tienda de Perfumes</title>
-  <link rel="stylesheet" href="../styles.css">
-</head>
-<body>
-  
-  <div class="header">
-    <img src="/imagenes/logo.jpg" alt="Logo Tienda de Perfumes">
-  </div>
-  <a href="../index.html" class="back-button">← Regresar al índice</a>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado Clientes - Tienda de Perfumes</title>
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body>
+    
+    <div class="header">
+      <img src="/imagenes/logo.jpg" alt="Logo Tienda de Perfumes">
+    </div>
+    <a href="../index.html" class="back-button">← Regresar al índice</a>
 
-  <div class="form-container">
-    <h2>Registrar Cliente</h2>
-    <form id="clienteForm">
-      <label for="nombreCliente">Nombre:</label>
-      <input type="text" id="nombreCliente" name="nombreCliente" required>
+    <div class="form-container">
+      <h2>Lista clientes</h2>
+      
+      <table>
+        <thead>
+          <tr>
+              <th>Id</th>
+            <th>Nombre</th>
+            <th>Dirección</th>
+            <th>Teléfono</th>
+          </tr>
+        </thead>
+        <tbody id="clientesTable"></tbody>
+    </div>
 
-      <label for="direccionCliente">Dirección:</label>
-      <input type="text" id="direccionCliente" name="direccionCliente" required>
-
-      <label for="telefonoCliente">Teléfono:</label>
-      <input type="tel" id="telefonoCliente" name="telefonoCliente" required>
-
-      <button type="submit">Registrar Cliente</button>
-    </form>
-  </div>
-
-  <script>
-    document.getElementById('clienteForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      const cliente = {
-        nombre: document.getElementById('nombreCliente').value,
-        direccion: document.getElementById('direccionCliente').value,
-        telefono: document.getElementById('telefonoCliente').value
-      };
-
-      fetch('http://localhost:3000/clientes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(cliente)
-      })
-      .then(response => response.json())
-      .then(data => {
-        alert('Cliente registrado exitosamente');
-        document.getElementById('clienteForm').reset();
-      })
-      .catch(error => {
-        console.error('Error al registrar el cliente:', error);
-      });
-    });
-  </script>
-</body>
+    <a href="../src/agregar_cliente.html" class="back-button">+Agregar Cliente</a>
+    
+  </body>
 </html>
+
+<script>
+  fetch('http://localhost:3000/clientes')
+    .then(response => response.json())
+    .then(data => {
+      const tableBody = document.getElementById("clientesTable");
+      data.forEach(cliente => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+        <td>${cliente.IDCLIENTE}</td>
+          <td>${cliente.NOMBRE + " "+ cliente.APATERNO +" "+  cliente.AMATERNO}</td>
+          <td>${cliente.COLONIA}</td>
+          <td>${cliente.TELEFONO}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    })
+    .catch(error => console.error("Error cargando clientes:", error));
+</script>

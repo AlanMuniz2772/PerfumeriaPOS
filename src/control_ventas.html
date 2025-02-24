@@ -82,7 +82,7 @@
       e.preventDefault();
       const clienteNombre = document.getElementById('clienteNombre').value.toLowerCase();
 
-      fetch(`http://localhost:3000/clientes?nombre=${clienteNombre}`)
+      fetch(`http://localhost:3000/clientes?NOMBRE=${clienteNombre}`)
         .then(response => response.json())
         .then(data => {
           if (data.length > 0) {
