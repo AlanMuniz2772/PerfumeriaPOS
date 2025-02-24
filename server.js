@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require("express");
 const mysql = require("mysql2");
 
@@ -5,10 +7,10 @@ const app = express();
 app.use(express.json());
 
 const db = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "fn-2187",
-    database: "perfumeria"
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 db.connect(err => {
@@ -42,6 +44,22 @@ app.post("/registrar_cliente", (req, res) => {
     db.query(sql, valores, (err, result) => {
         if (err) {
             console.error("Error al insertar cliente:", err);
+            res.status(500).json({ error: "Error al registrar el cliente" });
+            return;
+        }
+        res.json({ mensaje: "Cliente registrado correctamente", id: result.insertId });
+    });
+});
+
+app.post("/registrar_producto", (req, res) => {
+    const { nombre, descripcion, cantidad, preciocompra, precioventa} = req.body;
+
+    const sql = "INSERT INTO PRODUCTOS (nombre, descripcion, cantidad, preciocompra, precioventa) VALUES (?, ?, ?, ?, ?)";
+    const valores = [nombre, descripcion, cantidad, preciocompra, precioventa];
+
+    db.query(sql, valores, (err, result) => {
+        if (err) {
+            console.error("Error al insertar productos:", err);
             res.status(500).json({ error: "Error al registrar el cliente" });
             return;
         }
