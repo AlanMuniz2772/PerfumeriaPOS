@@ -1,0 +1,66 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Registrar venta - Tienda de Perfumes</title>
+        <link rel="stylesheet" href="../styles.css">
+    </head>
+    <body>
+        <div class="venta-container">
+            <h2>Registrar Venta</h2>
+            <form id="ventaForm">
+
+            <label for="tipoVenta">Tipo de Venta:</label>
+            <select id="tipoVenta" name="tipoVenta" required>
+                <option value="contado">Contado</option>
+                <option value="credito">Crédito</option>
+            </select>
+
+            <div id="creditoSection" style="display: none;">
+                <label for="importeInicial">Importe Inicial (Crédito):</label>
+                <input type="number" id="importeInicial" name="importeInicial" step="0.01">
+            </div>
+
+            <h3>Agregar Productos</h3>
+            <div id="productosVendidos"></div>
+
+            <label for="productoSelect">Seleccionar Producto:</label>
+            <select id="productoSelect"></select>
+
+            <label for="cantidad">Cantidad:</label>
+            <input type="number" id="cantidad" name="cantidad" value="1" min="1">
+
+            <button type="button" id="agregarProductoBtn">Agregar Producto</button>
+
+            <h3>Monto Total: $<span id="montoTotal">0.00</span></h3>
+
+            <button type="submit">Finalizar Venta</button>
+            </form>
+        </div>   
+    </body>
+</html>
+
+<script>
+    const venta = {
+    IDCLIENTE: 1,
+    IDTIPO: 2,
+    SALDOABONADO: 500.00,
+    VENTATOTAL: 1500.00,
+    productos: [
+        { IDPRODUCTOS: 1, CANTPRODUCTOS: 2 },
+        { IDPRODUCTOS: 3, CANTPRODUCTOS: 1 }
+    ]
+};
+
+fetch("http://localhost:3000/registrar_venta", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify(venta)
+})
+.then(response => response.json())
+.then(data => console.log("Venta registrada:", data))
+.catch(error => console.error("Error al registrar la venta:", error));
+
+</script>
