@@ -4,113 +4,168 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Pagos - Ventas a Crédito</title>
-  <link rel="stylesheet" href="../styles.css"> <!-- Archivo CSS externo -->
+  <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
 
- <!-- Borre logo -->
   <a href="../index.html" class="back-button">← Regresar al índice</a>
 
-  <!-- Contenedor principal -->
   <div class="container">
     <h1>Control de Pagos - Ventas a Crédito</h1>
 
     <!-- Formulario de búsqueda de cliente -->
     <div class="form-group">
-      <label for="customerID">Identificación del Cliente:</label>
-      <input type="text" id="customerID" placeholder="Ingrese la identificación del cliente">
+      <label for="customerID">ID del Cliente:</label>
+      <input type="text" id="customerID" placeholder="Ingrese el ID del cliente">
       <button onclick="searchCustomer()" class="submit-btn">Buscar Cliente</button>
     </div>
 
-    <!-- Información del cliente y venta -->
-    <div id="customerInfo" style="display:none;">
-      <h2>Datos del Cliente</h2>
-      <div class="form-group">
-        <label for="customerName">Nombre del Cliente:</label>
-        <input type="text" id="customerName" disabled>
-      </div>
-
-      <div class="form-group">
-        <label for="customerAddress">Dirección:</label>
-        <input type="text" id="customerAddress" disabled>
-      </div>
-
-      <h2>Detalle de Venta</h2>
-      <div class="form-group">
-        <label for="saleFolio">Folio de Venta:</label>
-        <input type="text" id="saleFolio" disabled>
-      </div>
-
+    <!-- Resultados de ventas a crédito pendientes -->
+    <div id="salesList" style="display:none;">
+      <h2>Ventas Pendientes</h2>
       <table>
         <thead>
           <tr>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Precio Unitario</th>
-            <th>Subtotal</th>
+            <th>ID Venta</th>
+            <th>Total Venta</th>
+            <th>Saldo Pendiente</th>
+            <th>Fecha</th>
+            <th>Acción</th>
           </tr>
         </thead>
-        <tbody id="saleDetails">
-          <!-- Los detalles de la venta se mostrarán aquí -->
+        <tbody id="salesTableBody">
+          <!-- Las ventas pendientes se insertarán aquí -->
         </tbody>
       </table>
     </div>
 
-    <!-- Formulario de pago parcial -->
-    <div id="paymentSection" style="display:none;">
-      <h2>Registrar Pago Parcial</h2>
-      <div class="form-group">
-        <label for="paymentDate">Fecha del Pago:</label>
-        <input type="date" id="paymentDate">
-      </div>
-
-      <div class="form-group">
-        <label for="paymentAmount">Monto del Pago:</label>
-        <input type="number" id="paymentAmount" placeholder="Ingrese el monto del pago">
-      </div>
-
-      <button onclick="applyPayment()" class="submit-btn">Aplicar Pago</button>
+  </div>
+  <div id="paymentModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>Registrar Abono</h2>
+      <label for="paymentAmount">Monto del Abono:</label>
+      <input type="number" id="paymentAmount" placeholder="Ingrese el monto" min="1">
+      <button onclick="confirmPayment()" class="submit-btn">Confirmar Abono</button>
     </div>
   </div>
 
-  <script>
-    function searchCustomer() {
-      document.getElementById('customerName').value = 'Juan Pérez';
-      document.getElementById('customerAddress').value = 'Calle Falsa 123';
-      document.getElementById('saleFolio').value = 'FV12345';
+</body>
+</html>
 
-      const saleDetails = document.getElementById('saleDetails');
-      saleDetails.innerHTML = `
-        <tr>
-          <td>Perfume A</td>
-          <td>2</td>
-          <td>$50.00</td>
-          <td>$100.00</td>
-        </tr>
-        <tr>
-          <td>Perfume B</td>
-          <td>1</td>
-          <td>$75.00</td>
-          <td>$75.00</td>
-        </tr>
-      `;
+<script>
+  let selectedVentaId = null;
 
-      document.getElementById('customerInfo').style.display = 'block';
-      document.getElementById('paymentSection').style.display = 'block';
+  function searchCustomer() {
+    const customerID = document.getElementById('customerID').value;
+    if (!customerID) {
+      alert("Por favor ingrese un ID de cliente válido.");
+      return;
     }
 
-    function applyPayment() {
-      const paymentDate = document.getElementById('paymentDate').value;
-      const paymentAmount = document.getElementById('paymentAmount').value;
+    fetch(`http://localhost:3000/ventas_pendientes/${customerID}`)
+    .then(response => {
+      console.log("Código de respuesta:", response.status); // Verifica el código de respuesta HTTP
+      return response.json();
+    })
+    .then(data => {
+      console.log("Datos recibidos:", data); // Verifica que la respuesta sea válida
 
-      if (paymentDate === '' || paymentAmount === '') {
-        alert('Por favor ingrese la fecha y el monto del pago.');
+      const salesTableBody = document.getElementById('salesTableBody');
+      salesTableBody.innerHTML = '';
+
+      if (!Array.isArray(data) || data.length === 0) {
+        alert("No hay ventas a crédito pendientes para este cliente.");
         return;
       }
 
-      alert('Pago parcial aplicado correctamente por un monto de $' + paymentAmount);
-    }
-  </script>
+      data.forEach(venta => {
+        const row = `
+          <tr>
+            <td>${venta.IDVENTA}</td>
+            <td>$${parseFloat(venta.VENTATOTAL).toFixed(2)}</td>
+            <td>$${(parseFloat(venta.VENTATOTAL) - parseFloat(venta.SALDOABONADO)).toFixed(2)}</td>
+            <td>${venta.FECHA}</td>
+            <td>
+              <button onclick="openModal(${venta.IDVENTA})" class="submit-btn">Abonar</button>
+            </td>
+          </tr>
+        `;
+        salesTableBody.innerHTML += row;
+      });
 
-</body>
-</html>
+      document.getElementById('salesList').style.display = 'block';
+    })
+    .catch(error => {
+      console.error("Error al obtener ventas:", error);
+      alert("Hubo un error al obtener la información.");
+    });
+
+  }
+
+  function openModal(ventaId) {
+      selectedVentaId = ventaId; // Guardamos la ID de la venta
+      document.getElementById('paymentModal').style.display = 'block';
+  }
+
+  function closeModal() {
+      document.getElementById('paymentModal').style.display = 'none';
+  }
+
+  function confirmPayment() {
+      const paymentAmount = document.getElementById('paymentAmount').value;
+      if (!paymentAmount || paymentAmount <= 0) {
+        alert("Ingrese un monto válido.");
+        return;
+      }
+
+      alert(`Abono de $${paymentAmount} registrado para la venta ${selectedVentaId}`);
+      closeModal();
+
+      
+      fetch(`http://localhost:3000/registrar_abono`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idVenta: selectedVentaId, monto: paymentAmount })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert("Abono registrado correctamente.");
+      })
+      .catch(error => {
+        console.error("Error al registrar abono:", error);
+        alert("Hubo un error al registrar el abono.");
+      });
+      
+    }
+</script>
+
+<style>
+  /* Estilos del modal */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 30%;
+    text-align: center;
+    border-radius: 8px;
+  }
+
+  .close {
+    color: red;
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+  }
+</style>
