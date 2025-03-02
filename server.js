@@ -19,6 +19,17 @@ db.connect(err => {
     console.log("Conectado a MySQL");
 });
 
+app.post("/login", (req, res) => {
+    const { user, password } = req.body;
+    const sql = "SELECT * FROM LOGIN WHERE USUARIO = ? AND PASSWORDD = ?";
+
+    db.query(sql, [user, password], (err, results) => {
+        if (err) return res.status(500).json({ error: "Error en el servidor" });
+        if (results.length === 0) return res.status(401).json({ error: "Credenciales incorrectas" });
+
+        res.json({ success: true });
+    });
+});
 
 //GETS
 app.get("/clientes", (req, res) => {

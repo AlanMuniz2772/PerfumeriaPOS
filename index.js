@@ -1,6 +1,7 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain  } = require("electron");
 const { exec, execSync } = require("child_process");
 const net = require("net");
+const path = require("path");
 
 const PORT = 3000;
 let serverProcess = null;
@@ -43,11 +44,18 @@ function createWindow() {
         width: 800,
         height: 600,
         webPreferences: {
-            nodeIntegration: true,
+            preload: path.join(__dirname, "preload.js"), // Usar un script de preload
+            contextIsolation: true, // Asegura que el contexto sea seguro
+            enableRemoteModule: false,
+            nodeIntegration: false // Mantener desactivado para seguridad
         },
     });
 
-    win.loadFile("index.html");
+    win.loadFile("login/login.html");
+
+    ipcMain.on("login-success", () => {
+        win.loadFile("index.html"); // Cargar la pantalla principal
+    });
 
     win.on("closed", () => {
         // Cierra el servidor cuando la ventana de Electron se cierre
