@@ -31,6 +31,30 @@ app.post("/login", (req, res) => {
     });
 });
 
+app.post("/change_password", (req, res) => {
+    const { user, currentPassword, newPassword } = req.body;
+  
+    if (!user || !currentPassword || !newPassword) {
+      return res.json({ success: false, message: "Todos los campos son obligatorios." });
+    }
+  
+    // 1️⃣ Verificar si el usuario y la contraseña actual son correctos
+    db.query("SELECT PASSWORDD FROM LOGIN WHERE USUARIO = ? AND PASSWORDD = ?", [user, currentPassword], (err, results) => {
+      if (err) return res.status(500).json({ success: false, message: "Error en el servidor." });
+  
+      if (results.length === 0) {
+        return res.json({ success: false, message: "Usuario o contraseña incorrectos." });
+      }
+  
+      // 2️⃣ Actualizar la contraseña
+      db.query("UPDATE LOGIN SET PASSWORDD = ? WHERE USUARIO = ?", [newPassword, user], (err) => {
+        if (err) return res.status(500).json({ success: false, message: "Error al actualizar la contraseña." });
+  
+        res.json({ success: true, message: "Contraseña actualizada con éxito." });
+      });
+    });
+  });
+
 //GETS
 app.get("/clientes", (req, res) => {
     db.query("SELECT * FROM CLIENTES", (err, results) => {

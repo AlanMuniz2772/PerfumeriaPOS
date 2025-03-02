@@ -18,7 +18,23 @@
             <input type="password" id="password" placeholder="Ingresa tu contraseña">
             
             <button onclick="login()">Iniciar Sesión</button>
+            <p id="message"></p>
+
+            <button onclick="openChangePasswordModal()">Cambiar Contraseña</button>
         </div>
     </div>
+
+    <!-- Modal de cambio de contraseña -->
+  <div id="changePasswordModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeChangePasswordModal()">&times;</span>
+      <h2>Cambiar Contraseña</h2>
+      <input type="text" id="changeUser" placeholder="Usuario">
+      <input type="password" id="currentPassword" placeholder="Contraseña Actual">
+      <input type="password" id="newPassword" placeholder="Nueva Contraseña">
+      <button onclick="changePassword()">Actualizar Contraseña</button>
+      <p id="changeMessage"></p>
+    </div>
+  </div>
 </body>
 </html>
