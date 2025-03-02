@@ -131,6 +131,7 @@
       .then(response => response.json())
       .then(data => {
         alert("Abono registrado correctamente.");
+        searchCustomer(); // Actualizamos la lista de ventas pendientes
       })
       .catch(error => {
         console.error("Error al registrar abono:", error);
