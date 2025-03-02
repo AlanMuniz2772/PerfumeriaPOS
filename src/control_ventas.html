@@ -8,36 +8,73 @@
   </head>
 
   <body>
-    <!-- Borre logo -->
     <a href="../index.html" class="back-button">← Regresar al índice</a>
 
     <div class="search-container">
       <h2>Buscar Cliente</h2>
-      <form id="buscarClienteForm">
-        <label for="clienteNombre">Nombre del Cliente:</label>
-        <input type="text" id="clienteNombre" name="clienteNombre">
-        <button type="submit">Buscar</button>
-      </form>
-
-      <div id="seleccionarClienteDiv" style="display: none;">
-        <label for="seleccionarCliente">Seleccionar Cliente:</label>
-        <select id="seleccionarCliente"></select>
-      </div>
-
-      <div id="clienteInfo" style="display: none;">
-        <h3>Información del Cliente</h3>
-        <p>Nombre: <span id="clienteNombreInfo"></span></p>
-        <p>Dirección: <span id="clienteDireccion"></span></p>
-        <p>Teléfono: <span id="clienteTelefono"></span></p>
-      </div>
+      <label for="clienteNombre">Nombre del Cliente:</label>
+      <input type="text" id="clienteNombre" name="clienteNombre" oninput="buscarCliente()">
+      <ul id="listaClientes" class="dropdown"></ul>
     </div>
+
+    <div id="clienteInfo" style="display: none;">
+      <h3>Información del Cliente</h3>
+      <table>
+        <tr><td><strong>Nombre:</strong></td><td><span id="clienteNombreInfo"></span></td></tr>
+        <tr><td><strong>Dirección:</strong></td><td><span id="clienteDireccion"></span></td></tr>
+        <tr><td><strong>Teléfono:</strong></td><td><span id="clienteTelefono"></span></td></tr>
+      </table>
+    </div>
+
+    <script>
+      let clientesData = [];
+
+      // Obtener clientes de la API
+      fetch('http://localhost:3000/clientes')
+        .then(response => response.json())
+        .then(data => {
+          clientesData = data;
+        })
+        .catch(error => console.error("Error cargando clientes:", error));
+
+      // Buscar cliente mientras se escribe
+      function buscarCliente() {
+        let input = document.getElementById("clienteNombre").value.toLowerCase();
+        let lista = document.getElementById("listaClientes");
+        lista.innerHTML = "";
+
+        if (input.length === 0) {
+          lista.style.display = "none";
+          return;
+        }
+
+        let resultados = clientesData.filter(cliente => 
+          cliente.NOMBRE.toLowerCase().includes(input)
+        );
+
+        if (resultados.length > 0) {
+          lista.style.display = "block";
+          resultados.forEach(cliente => {
+            let li = document.createElement("li");
+            li.textContent = cliente.NOMBRE;
+            li.onclick = () => seleccionarCliente(cliente);
+            lista.appendChild(li);
+          });
+        } else {
+          lista.style.display = "none";
+        }
+      }
+
+      // Seleccionar cliente de la lista
+      function seleccionarCliente(cliente) {
+        document.getElementById("clienteNombre").value = cliente.NOMBRE;
+        document.getElementById("clienteNombreInfo").textContent = cliente.NOMBRE;
+        document.getElementById("clienteDireccion").textContent = cliente.COLONIA;
+        document.getElementById("clienteTelefono").textContent = cliente.TELEFONO;
+
+        document.getElementById("clienteInfo").style.display = "block";
+        document.getElementById("listaClientes").style.display = "none";
+      }
+    </script>
   </body>
 </html>
-
-  
-<script>
-  
-</script>
-  
-
-  
