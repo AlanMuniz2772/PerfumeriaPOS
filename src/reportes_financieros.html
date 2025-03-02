@@ -31,10 +31,12 @@
     <table id="reportesTabla">
       <thead>
         <tr>
-          <th>Folio</th>
           <th>Cliente</th>
           <th>Fecha</th>
+          <th>Productos Comprados</th>
+          <th>Tipo de Venta</th>
           <th>Total</th>
+          <th>Detalles de pago</th>
         </tr>
       </thead>
       <tbody>
@@ -50,7 +52,43 @@
       const fechaInicio = document.getElementById('fechaInicio').value;
       const fechaFin = document.getElementById('fechaFin').value;
 
-      fetch(`http://localhost:3000/reportes?inicio=${fechaInicio}&fin=${fechaFin}`)
+
+      try {
+        const response = await fetch(`http://localhost:3000/reportes?inicio=${fechaInicio}&fin=${fechaFin}`);
+        const data = await.response.json();
+
+        const reportesContainer = document.getElementById('reportesContainer');
+        const reportesTabla = document.getElementById('reportesTabla').querySelector('tbody');
+        reportesTabla.innerHTML = '';
+
+        if(data.length === 0) {
+          reportesTabla.innerHTML= '<tr><td colspan="6">No se encontraron datos para el rango de fechas seleccionado.</td></tr>';
+        } else {
+          data.forEach(reporte => {
+            const row = document.createElement('tr');
+            let detallesPago = reporte.TipoVenta === 'Credito' 
+              ? `Abono: $${reporte.AbonoInicial.toFixed(2)} / Saldo: $${reporte.SaldoPendiente.toFixed(2)}` 
+              : `$${reporte.PagoTotal.toFixed(2)}`;
+
+              row.innerHTML = `
+              <td>${reporte.Cliente}</td>
+              <td>${reporte.FechaVenta}</td>
+              <td>${reporte.ProductosComprados}</td>
+              <td>${reporte.TipoVenta}</td>
+              <td>$${reporte.PagoTotal.toFixed(2)}</td>
+              <td>${detallesPago}</td>
+            `;
+            reportesTabla.appendChild(row);
+          });
+        }
+        reportesContainer.style.display = 'block';
+      } catch(error) {
+        console.error('Error al generar el reporte:', error);
+      }
+
+
+
+      /**fetch(`http://localhost:3000/reportes?inicio=${fechaInicio}&fin=${fechaFin}`)
         .then(response => response.json())
         .then(data => {
           const reportesContainer = document.getElementById('reportesContainer');
@@ -58,13 +96,37 @@
 
           reportesTabla.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
 
+          if(data.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td colspan="6">No se encontraron datos para el rango de fechas seleccionado.</td>`;
+            reportesTabla.appendChild(row);
+          }
+
           data.forEach(reporte => {
             const row = document.createElement('tr');
+
+            //Lista de productos comprados
+            const productosComprados = reporte.ProductosComprados;
+
+            //condicion si la venta es a credito o contado
+            let abonoSaldo = '';
+            let tipoVenta = '';
+
+            if(reporte.TipoVenta === 'Credito') {
+              tipoVenta = 'Credito';
+              abonoSaldo = `Abono: $${(reporte.AbonoInicial || 0).toFixed(2)} / Saldo: $${(reporte.SaldoPendiente || 0).toFixed(2)}`;
+            } else {
+              tipoVenta = 'Contado';
+              abonoSaldo = `$${reporte.PagoTotal.toFixed(2)}`;
+            }
+
             row.innerHTML = `
-              <td>${reporte.folio}</td>
-              <td>${reporte.cliente}</td>
-              <td>${reporte.fecha}</td>
-              <td>$${reporte.total.toFixed(2)}</td>
+              <td>${reporte.Cliente}</td>
+              <td>${reporte.Ventas}</td>
+              <td>${productosComprados}</td>
+              <td>${tipoVenta}</td>
+              <td>${reporte.PagoTotal.toFixed(2)}</td>
+              <td>${abonoSaldo}</td>
             `;
             reportesTabla.appendChild(row);
           });
@@ -73,7 +135,7 @@
         })
         .catch(error => {
           console.error('Error al generar el reporte:', error);
-        });
+        }); */
     });
   </script>
 </body>
