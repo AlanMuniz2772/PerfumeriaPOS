@@ -5,6 +5,7 @@ const mysql = require("mysql2");
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -33,6 +34,79 @@ app.get("/productos", (req, res) => {
         res.json(results);
     });
 });
+
+
+//Reporte financiero
+app.get("/reportes", async (req, res) => {
+    const { inicio, fin } = req.query;
+
+    if (!inicio || !fin) {
+        return res.status(400).json({ error: "Debe proporcionar un rango de fechas válido" });
+    }
+
+    const sqlContado = `
+        SELECT 
+            V.IDVENTA, 
+            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente, 
+            DATE_FORMAT(V.FECHA, '%Y-%m-%d') AS FechaVenta,
+            GROUP_CONCAT(P.NOMBRE SEPARATOR ', ') AS ProductosComprados,
+            'Contado' AS TipoVenta,
+            V.VENTATOTAL AS PagoTotal,
+            0 AS AbonoInicial,
+            0 AS SaldoPendiente
+        FROM VENTAS V
+        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
+        LEFT JOIN VENTAS_has_PRODUCTOS VP ON V.IDVENTA = VP.IDVENTA
+        LEFT JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
+        WHERE V.IDTIPO = 1 AND V.FECHA BETWEEN ? AND ?
+        GROUP BY V.IDVENTA;
+    `;
+
+    const sqlCredito = `
+        SELECT 
+            V.IDVENTA, 
+            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente, 
+            DATE_FORMAT(V.FECHA, '%Y-%m-%d') AS FechaVenta,
+            GROUP_CONCAT(P.NOMBRE SEPARATOR ', ') AS ProductosComprados,
+            'Credito' AS TipoVenta,
+            V.VENTATOTAL AS PagoTotal,
+            COALESCE(CC.ABONO, 0) AS AbonoInicial,
+            COALESCE(CC.SALDOPENDIENTE, 0) AS SaldoPendiente
+        FROM VENTAS V
+        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
+        LEFT JOIN VENTAS_has_PRODUCTOS VP ON V.IDVENTA = VP.IDVENTA
+        LEFT JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
+        LEFT JOIN CONTROLPAGOCREDITO CC ON V.IDVENTA = CC.IDVENTA
+        WHERE V.IDTIPO = 2 AND V.FECHA BETWEEN ? AND ?
+        GROUP BY V.IDVENTA;
+    `;
+
+    try {
+        const [ventasContado, ventasCredito] = await Promise.all([
+            new Promise((resolve, reject) => {
+                db.query(sqlContado, [inicio, fin], (err, results) => {
+                    if (err) reject(err);
+                    else resolve(results);
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.query(sqlCredito, [inicio, fin], (err, results) => {
+                    if (err) reject(err);
+                    else resolve(results);
+                });
+            })
+        ]);
+
+        const reportes = [...ventasContado, ...ventasCredito].sort((a, b) => new Date(b.FechaVenta) - new Date(a.FechaVenta));
+
+        res.json(reportes);
+    } catch (error) {
+        console.error("Error al obtener reportes:", error);
+        res.status(500).json({ error: "Error en el servidor al obtener reportes" });
+    }
+});
+
+
 
 app.get("/ventas_pendientes/:idCliente", (req, res) => {
     const idCliente = req.params.idCliente;
