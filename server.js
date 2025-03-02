@@ -35,15 +35,15 @@ app.get("/productos", (req, res) => {
     });
 });
 
+
 //Reporte financiero
-app.get("/reportes", (req, res) => {
-    const {inicio, fin} = req.query;
-    
+app.get("/reportes", async (req, res) => {
+    const { inicio, fin } = req.query;
+
     if (!inicio || !fin) {
         return res.status(400).json({ error: "Debe proporcionar un rango de fechas válido" });
     }
 
-    // Consultas separadas para ventas de contado y crédito
     const sqlContado = `
         SELECT 
             V.IDVENTA, 
@@ -81,26 +81,52 @@ app.get("/reportes", (req, res) => {
         GROUP BY V.IDVENTA;
     `;
 
+    try {
+        const [ventasContado, ventasCredito] = await Promise.all([
+            new Promise((resolve, reject) => {
+                db.query(sqlContado, [inicio, fin], (err, results) => {
+                    if (err) reject(err);
+                    else resolve(results);
+                });
+            }),
+            new Promise((resolve, reject) => {
+                db.query(sqlCredito, [inicio, fin], (err, results) => {
+                    if (err) reject(err);
+                    else resolve(results);
+                });
+            })
+        ]);
 
-    // Ejecutar ambas consultas y combinar los resultados
-    db.query(sqlContado, [inicio, fin], (err, resultsContado) => {
+        const reportes = [...ventasContado, ...ventasCredito].sort((a, b) => new Date(b.FechaVenta) - new Date(a.FechaVenta));
+
+        res.json(reportes);
+    } catch (error) {
+        console.error("Error al obtener reportes:", error);
+        res.status(500).json({ error: "Error en el servidor al obtener reportes" });
+    }
+});
+
+
+
+app.get("/ventas_pendientes/:idCliente", (req, res) => {
+    const idCliente = req.params.idCliente;
+
+    const sql = `
+      SELECT IDVENTA, VENTATOTAL, SALDOABONADO, FECHA
+      FROM VENTAS
+      WHERE IDCLIENTE = ? AND (VENTATOTAL - SALDOABONADO) > 0 AND IDTIPO = 2;`;
+
+    db.query(sql, [idCliente], (err, results) => {
         if (err) {
-            console.error("Error obteniendo ventas de contado:", err);
-            return res.status(500).json({ error: "Error al obtener ventas de contado" });
+            console.error("Error al obtener ventas pendientes:", err);
+            res.status(500).json({ error: "Error en el servidor" });
+            return;
         }
-
-        db.query(sqlCredito, [inicio, fin], (err, resultsCredito) => {
-            if (err) {
-                console.error("Error obteniendo ventas de crédito:", err);
-                return res.status(500).json({ error: "Error al obtener ventas de crédito" });
-            }
-            
-            const reportes = [...resultsContado, ...resultsCredito];
-            reportes.sort((a, b) => new Date(b.FechaVenta) - new Date(a.FechaVenta));
-            res.json(reportes);
-        });
+        res.json(results);
     });
 });
+
+
 
 //POSTS
 app.post("/registrar_cliente", (req, res) => {
@@ -135,7 +161,7 @@ app.post("/registrar_producto", (req, res) => {
     });
 });
 
-// Registrar una venta
+
 app.post("/registrar_venta", (req, res) => {
     const { IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, productos } = req.body;
 
@@ -197,6 +223,25 @@ app.post("/registrar_venta", (req, res) => {
                     });
             });
         });
+    });
+});
+
+app.post("/registrar_abono", (req, res) => {
+    const { idVenta, monto } = req.body;
+
+    const sql = `
+      UPDATE VENTAS
+      SET SALDOABONADO = SALDOABONADO + ?
+      WHERE IDVENTA = ? AND (VENTATOTAL - SALDOABONADO) >= ?;
+    `;
+
+    db.query(sql, [monto, idVenta, monto], (err, result) => {
+        if (err) {
+            console.error("Error al registrar abono:", err);
+            res.status(500).json({ error: "Error en el servidor" });
+            return;
+        }
+        res.json({ message: "Abono registrado correctamente" });
     });
 });
 
