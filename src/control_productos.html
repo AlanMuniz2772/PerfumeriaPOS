@@ -14,6 +14,10 @@
   <div class="form-container">
     <h2>Lista productos</h2>
     
+    <input type="text" id="searchBar" placeholder="Buscar por descripción...">
+    
+    <a href="../src/agregar_producto.html" class="back-button">+Agregar Producto</a>
+
     <table>
       <thead>
         <tr>
@@ -24,15 +28,29 @@
         </tr>
       </thead>
       <tbody id="productosTable"></tbody>
+    </table>
   </div>
 
-  <a href="../src/agregar_producto.html" class="back-button">+Agregar Producto</a>
+  
 
   
 </body>
 </html>
 
 <script>
+  document.getElementById('searchBar').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#productosTable tr');
+    rows.forEach(row => {
+      const descripcion = row.cells[1].textContent.toLowerCase();
+      if (descripcion.includes(filter)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+
   fetch('http://localhost:3000/productos')
     .then(response => response.json())
     .then(data => {
