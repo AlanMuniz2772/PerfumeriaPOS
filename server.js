@@ -5,7 +5,7 @@ const mysql = require("mysql2");
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+//app.use(cors())
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -269,20 +269,62 @@ app.post("/registrar_venta", (req, res) => {
 
 app.post("/registrar_abono", (req, res) => {
     const { idVenta, monto } = req.body;
+    const fechaActual = new Date().toISOString().split('T')[0]; // Obtener la fecha actual en formato YYYY-MM-DD
 
-    const sql = `
-      UPDATE VENTAS
-      SET SALDOABONADO = SALDOABONADO + ?
-      WHERE IDVENTA = ? AND (VENTATOTAL - SALDOABONADO) >= ?;
-    `;
-
-    db.query(sql, [monto, idVenta, monto], (err, result) => {
+    // Iniciar una transacción para garantizar consistencia en las actualizaciones
+    db.beginTransaction((err) => {
         if (err) {
-            console.error("Error al registrar abono:", err);
-            res.status(500).json({ error: "Error en el servidor" });
-            return;
+            console.error("Error al iniciar transacción:", err);
+            return res.status(500).json({ error: "Error en el servidor" });
         }
-        res.json({ message: "Abono registrado correctamente" });
+
+        // Actualizar el saldo abonado en la tabla VENTAS
+        const sqlUpdateVenta = `
+            UPDATE VENTAS
+            SET SALDOABONADO = SALDOABONADO + ?
+            WHERE IDVENTA = ? AND (VENTATOTAL - SALDOABONADO) >= ?;
+        `;
+
+        db.query(sqlUpdateVenta, [monto, idVenta, monto], (err, result) => {
+            if (err) {
+                return db.rollback(() => {
+                    console.error("Error al actualizar saldo en VENTAS:", err);
+                    res.status(500).json({ error: "Error en el servidor" });
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return db.rollback(() => {
+                    res.status(400).json({ error: "El abono excede el saldo pendiente o la venta no existe" });
+                });
+            }
+
+            // Insertar el abono en la tabla CONTROLPAGOCREDITO
+            const sqlInsertAbono = `
+                INSERT INTO CONTROLPAGOCREDITO (IDVENTA, ABONO, FECHA)
+                VALUES (?, ?, ?);
+            `;
+
+            db.query(sqlInsertAbono, [idVenta, monto, fechaActual], (err, result) => {
+                if (err) {
+                    return db.rollback(() => {
+                        console.error("Error al insertar abono en CONTROLPAGOCREDITO:", err);
+                        res.status(500).json({ error: "Error en el servidor" });
+                    });
+                }
+
+                // Confirmar la transacción
+                db.commit((err) => {
+                    if (err) {
+                        return db.rollback(() => {
+                            console.error("Error al confirmar la transacción:", err);
+                            res.status(500).json({ error: "Error en el servidor" });
+                        });
+                    }
+                    res.json({ message: "Abono registrado correctamente" });
+                });
+            });
+        });
     });
 });
 

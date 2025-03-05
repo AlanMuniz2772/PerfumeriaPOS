@@ -30,10 +30,10 @@
       <input type="text" id="calleCliente" name="calleCliente" required>
 
       <label for="numeroCasaCliente">Número de Casa:</label>
-      <input type="text" id="numeroCasaCliente" name="numeroCasaCliente" required>
+      <input type="number" id="numeroCasaCliente" name="numeroCasaCliente" required>
 
       <label for="telefonoCliente">Teléfono:</label>
-      <input type="tel" id="telefonoCliente" name="telefonoCliente" required>
+      <input type="number" id="telefonoCliente" name="telefonoCliente" required>
 
       <button type="submit">Registrar Cliente</button>
     </form>
@@ -71,7 +71,7 @@
       return response.json();
     })
     .then(data => {
-      alert('Cliente registrado exitosamente');
+      alert(`Cliente registrado exitosamente con ID: ${data.id}`);
       document.getElementById('clienteForm').reset();
       window.location.href = '../src/control_clientes.html';
     })
