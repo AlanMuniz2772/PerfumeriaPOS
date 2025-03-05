@@ -29,6 +29,7 @@
     <table id="reportesTabla">
       <thead>
         <tr>
+          <th>ID Venta</th> 
           <th>Cliente</th>
           <th>Fecha</th>
           <th>Productos Comprados</th>
@@ -59,21 +60,19 @@
         reportesTabla.innerHTML = '';
 
         if (data.length === 0) {
-            reportesTabla.innerHTML = '<tr><td colspan="6">No se encontraron datos para el rango de fechas seleccionado.</td></tr>';
+            reportesTabla.innerHTML = '<tr><td colspan="7">No se encontraron datos para el rango de fechas seleccionado.</td></tr>';
         } else {
             data.forEach(reporte => {
-                const row = document.createElement('tr');
-                let detallesPago = reporte.TipoVenta === 'Credito' 
-                    ? `Abono: $${reporte.AbonoInicial.toFixed(2)} / Saldo: $${reporte.SaldoPendiente.toFixed(2)}` 
-                    : `$${reporte.PagoTotal.toFixed(2)}`;
+              const row = document.createElement('tr');
 
-                row.innerHTML = `
+              row.innerHTML = `
+                    <td>${reporte.IDVENTA}</td>
                     <td>${reporte.Cliente}</td>
-                    <td>${reporte.FechaVenta}</td>
                     <td>${reporte.ProductosComprados}</td>
-                    <td>${reporte.TipoVenta}</td>
                     <td>$${reporte.PagoTotal.toFixed(2)}</td>
-                    <td>${detallesPago}</td>
+                    <td>${reporte.TipoVenta}</td>
+                    <td>$${reporte.Abono.toFixed(2)}</td>
+                    <td>$${reporte.SaldoPendiente.toFixed(2)}</td>
                 `;
                 reportesTabla.appendChild(row);
             });

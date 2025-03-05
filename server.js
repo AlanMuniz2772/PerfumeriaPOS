@@ -44,66 +44,107 @@ app.get("/reportes", async (req, res) => {
         return res.status(400).json({ error: "Debe proporcionar un rango de fechas válido" });
     }
 
-    const sqlContado = `
-        SELECT 
-            V.IDVENTA, 
-            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente, 
-            DATE_FORMAT(V.FECHA, '%Y-%m-%d') AS FechaVenta,
-            GROUP_CONCAT(P.NOMBRE SEPARATOR ', ') AS ProductosComprados,
-            'Contado' AS TipoVenta,
-            V.VENTATOTAL AS PagoTotal,
-            0 AS AbonoInicial,
-            0 AS SaldoPendiente
-        FROM VENTAS V
-        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
-        LEFT JOIN VENTAS_has_PRODUCTOS VP ON V.IDVENTA = VP.IDVENTA
-        LEFT JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
-        WHERE V.IDTIPO = 1 AND V.FECHA BETWEEN ? AND ?
-        GROUP BY V.IDVENTA;
-    `;
-
-    const sqlCredito = `
-        SELECT 
-            V.IDVENTA, 
-            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente, 
-            DATE_FORMAT(V.FECHA, '%Y-%m-%d') AS FechaVenta,
-            GROUP_CONCAT(P.NOMBRE SEPARATOR ', ') AS ProductosComprados,
-            'Credito' AS TipoVenta,
-            V.VENTATOTAL AS PagoTotal,
-            COALESCE(CC.ABONO, 0) AS AbonoInicial,
-            COALESCE(CC.SALDOPENDIENTE, 0) AS SaldoPendiente
-        FROM VENTAS V
-        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
-        LEFT JOIN VENTAS_has_PRODUCTOS VP ON V.IDVENTA = VP.IDVENTA
-        LEFT JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
-        LEFT JOIN CONTROLPAGOCREDITO CC ON V.IDVENTA = CC.IDVENTA
-        WHERE V.IDTIPO = 2 AND V.FECHA BETWEEN ? AND ?
-        GROUP BY V.IDVENTA;
-    `;
+    //Consulta para obtener todas las ventas en el rango de fechas
+    const sqlVentas =  `SELECT * FROM VENTAS WHERE FECHA BETWEEN ? AND ?`;
 
     try {
-        const [ventasContado, ventasCredito] = await Promise.all([
-            new Promise((resolve, reject) => {
-                db.query(sqlContado, [inicio, fin], (err, results) => {
-                    if (err) reject(err);
-                    else resolve(results);
-                });
-            }),
-            new Promise((resolve, reject) => {
-                db.query(sqlCredito, [inicio, fin], (err, results) => {
-                    if (err) reject(err);
-                    else resolve(results);
-                });
-            })
-        ]);
+        const ventas = await new Promise((resolve, reject) => {
+            db.query(sqlVentas, [inicio, fin], (err, results) => {
+                if (err) reject (err);
+                else resolve(results);
+            });
+        });
 
-        const reportes = [...ventasContado, ...ventasCredito].sort((a, b) => new Date(b.FechaVenta) - new Date(a.FechaVenta));
+        const reportes = [];
 
-        res.json(reportes);
-    } catch (error) {
+        for(const venta of ventas ) {
+            const idVenta = venta.IDVENTA;
+
+            //Obtener nombre completo del cliente
+            const cliente = await new Promise((resolve, reject) => {
+                db.query(
+                    `SELECT NOMBRE, APATERNO, AMATERNO FROM CLIENTES WHERE IDCLIENTE = ?`,
+                    [venta.IDCLIENTE],
+                    (err, results) => {
+                        if (err) reject(err);
+                        else resolve(results[0]);
+                    }
+                );
+            });
+
+            //Obtener tipo de venta
+            const tipoVenta = await new Promise((resolve, reject) => {
+                db.query(
+                    `SELECT TIPOVENTA FROM TIPOVENTA WHERE IDTIPO = ?`,
+                    [venta.IDTIPO],
+                    (err, results) => {
+                        if (err) reject(err);
+                        else resolve(results[0].TIPOVENTA);
+                    }
+                );
+            });
+
+            //Obtener los productos comprados
+            const productos = await new Promise((resolve, reject) => {
+                db.query(
+                    `SELECT IDPRODUCTOS FROM VENTAS_has_PRODUCTOS WHERE IDVENTA = ?`,
+                    [idVenta],
+                    (err, results) => {
+                        if (err) reject(err);
+                        else resolve(results);
+                    }
+                );
+            });
+
+            const productosComprados = [];
+            for (const producto of productos ) {
+                const nombreProducto = await new Promise((resolve, reject) => {
+                    db.query (
+                        `SELECT NOMBRE FROM PRODUCTOS WHERE IDPRODUCTOS = ?`,
+                        [producto.IDPRODUCTOS],
+                        (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results[0].NOMBRE);
+                        }
+                    );
+                });
+                productosComprados.push(nombreProducto);
+            }
+
+            //Verificar si la venta es de credito y obtener saldo pendiente
+            let saldoPendiente = 0;
+            if(venta.IDTIPO === 2) {
+                saldoPendiente = await new Promise((resolve, reject) => {
+                    db.query(
+                        `SELECT SALDOPENDIENTE FROM CONTROLPAGOCREDITO WHERE IDVENTA = ?`,
+                        [idVenta],
+                        (err, results) => {
+                            if (err) reject(err);
+                            else resolve(results.length ? results[0].SALDOPENDIENTE : 0);
+                        }
+                    );
+                });
+            }
+
+            //Agregar la informacion al reporte
+            reportes.push({
+                IDVENTA: idVenta,
+                Cliente: `${cliente.NOMBRE} ${cliente.APATERNO} ${cliente.AMATERNO}`,
+                ProductosComprados: productosComprados.join(", "),
+                PagoTotal: venta.VENTATOTAL,
+                TipoVenta: tipoVenta,
+                Abono: venta.SALDOABONADO,
+                SaldoPendiente: saldoPendiente
+            });
+        }
+
+        res.json(reportes);   
+
+    } catch(error) {
         console.error("Error al obtener reportes:", error);
         res.status(500).json({ error: "Error en el servidor al obtener reportes" });
     }
+    
 });
 
 
