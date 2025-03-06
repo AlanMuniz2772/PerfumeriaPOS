@@ -42,7 +42,8 @@ app.get("/reporte_financiero/:fecha", (req, res) => {
     
     console.log('Fecha recibida:', fecha);  // Verifica que se está recibiendo la fecha
     
-    const sql = "SELECT IDVENTA, IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, FECHA FROM VENTAS WHERE FECHA = ?";
+    
+    const sql = "SELECT * FECHA FROM VENTAS WHERE FECHA = ?";
     
     db.query(sql, [fecha], (err, results) => {
       if (err) {

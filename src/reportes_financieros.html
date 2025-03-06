@@ -23,9 +23,21 @@
     <!-- Resultados del reporte -->
     <div id="reportResults" style="display:none;">
       <h2>Ventas del día</h2>
-      <div id="reportList">
-        <!-- Los resultados se insertarán aquí -->
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Id Cliente</th>
+            <th>Id tipo venta</th>
+            <th>Saldo Abonado</th>
+            <th>Venta Total</th>
+          </tr>
+        </thead>
+        <tbody id="reportList">
+          <!-- Los resultados se insertarán aquí -->
+        </tbody>
+      </table>
+      
     </div>
 
   </div>
@@ -35,48 +47,43 @@
       const searchDate = document.getElementById('searchDate').value;
       console.log('Fecha seleccionada:', searchDate); 
       if (!searchDate) {
-        alert("Por favor ingresa una fecha.");
-        return;
+      alert("Por favor ingresa una fecha.");
+      return;
       }
 
+      // Limpiar los datos previos de la tabla
+      const reportList = document.getElementById('reportList');
+      reportList.innerHTML = ''; 
+
       fetch(`http://localhost:3000/reporte_financiero/${searchDate}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error("Error en la solicitud, estado: " + response.status);
-          }
-          return response.json(); // Parseamos la respuesta como JSON si es correcta
-        })
-        .then(data => {
-          console.log('Datos recibidos:', data);
-          const reportList = document.getElementById('reportList');
+      .then(response => {
+        if (!response.ok) {
+        throw new Error("Error en la solicitud, estado: " + response.status);
+        }
+        return response.json(); // Parseamos la respuesta como JSON si es correcta
+      })
+      .then(data => {
+        console.log('Datos recibidos:', data);
 
-          // Asegúrate de que la respuesta esté bien estructurada como arrays
-          const { idVenta, idCliente, idTipo, saldoAbonado, ventaTotal, fechaVenta } = data;
-
-          // Limpiar los resultados previos
-          reportList.innerHTML = '';
-
-          // Imprimir cada venta manualmente
-          for (let i = 0; i < idVenta.length; i++) {
-            const reportItem = `
-              <div class="report-item">
-                <p><strong>ID Venta:</strong> ${idVenta[i]}</p>
-                <p><strong>ID Cliente:</strong> ${idCliente[i]}</p>
-                <p><strong>ID Tipo:</strong> ${idTipo[i]}</p>
-                <p><strong>Saldo Abonado:</strong> $${parseFloat(saldoAbonado[i]).toFixed(2)}</p>
-                <p><strong>Total Venta:</strong> $${parseFloat(ventaTotal[i]).toFixed(2)}</p>
-                <p><strong>Fecha:</strong> ${fechaVenta[i]}</p>
-              </div>
-            `;
-            reportList.innerHTML += reportItem;
-          }
-
-          // Mostrar los resultados
-          document.getElementById('reportResults').style.display = 'block';
-        })
-        .catch(error => {
-          alert("Error al obtener el reporte: " + error);
+        data.forEach(venta => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${venta.IDVENTA}</td>
+          <td>${venta.IDCLIENTE}</td>
+          <td>${venta.IDTIPO}</td>
+          <td>${venta.SALDOABONADO}</td>
+          <td>${venta.VENTATOTAL}</td>
+        `;
+        reportList.appendChild(row);
         });
+
+        // Mostrar los resultados
+        document.getElementById('reportResults').style.display = 'block';
+      })
+      .catch(error => {
+        alert("Error al obtener el reporte: " + error);
+        console.log('Error al obtener el reporte:', error);
+      });
     }
   </script>
 
