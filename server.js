@@ -36,89 +36,43 @@ app.get("/productos", (req, res) => {
 });
 
 
-//Reporte financiero
-//Reporte financiero
-app.get('/reportes', (req, res) => {
-    const { inicio, fin } = req.query;
+// GET para generar reportes financieros sin abreviaciones
+app.get("/repfinanciero", (req, res) => {
+    const { fechaInicio, fechaFin } = req.query;
 
-    // Verificar que se pasaron las fechas
-    if (!inicio || !fin) {
-        return res.status(400).json({ error: 'Debe proporcionar un rango de fechas válido.' });
+    if (!fechaInicio || !fechaFin) {
+        return res.status(400).json({ error: "Se requieren las fechas de inicio y fin" });
     }
 
-    // Consultas para obtener las ventas y los productos comprados por venta
-    const queryVentas = `
-        SELECT 
-            V.IDVENTA, 
-            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente,
-            V.VENTATOTAL AS PagoTotal,
-            COALESCE(CP.ABONO, 0) AS Abono
-        FROM 
-            VENTAS V
-        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
-        LEFT JOIN CONTROLPAGOCREDITO CP ON V.IDVENTA = CP.IDVENTA
-        WHERE V.FECHA BETWEEN ? AND ?
-        ORDER BY V.FECHA;
+    // Consulta SQL
+    const sql = `
+        SELECT * 
+        FROM VENTAS 
+        WHERE FECHA BETWEEN ? AND ?;
     `;
 
-    // Ejecutar la consulta de ventas
-    db.query(queryVentas, [inicio, fin], (err, ventasResults) => {
+    db.query(sql, [fechaInicio, fechaFin], (err, results) => {
         if (err) {
-            console.error('Error en la consulta de ventas:', err);
-            return res.status(500).json({ error: 'Error al obtener las ventas.' });
+            console.error("Error al obtener los reportes financieros:", err);
+            return res.status(500).json({ error: "Error en el servidor" });
         }
 
-        if (ventasResults.length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontraron ventas en este rango de fechas.' });
-        }
-
-        // Para cada venta, obtener los productos comprados
-        const resultadosFinales = [];
-
-        const obtenerProductos = (idVenta, index) => {
-            const queryProductos = `
-                SELECT GROUP_CONCAT(P.NOMBRE ORDER BY VP.IDPRODUCTOS) AS ProductosComprados
-                FROM VENTAS_has_PRODUCTOS VP
-                JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
-                WHERE VP.IDVENTA = ?
-            `;
-
-            db.query(queryProductos, [idVenta], (err, productosResults) => {
-                if (err) {
-                    console.error('Error al obtener los productos:', err);
-                    return res.status(500).json({ error: 'Error al obtener los productos.' });
-                }
-
-                // Asignar los productos a la venta correspondiente
-                if (productosResults.length > 0) {
-                    ventasResults[index].ProductosComprados = productosResults[0].ProductosComprados;
-                } else {
-                    ventasResults[index].ProductosComprados = '';
-                }
-
-                // Estructura final con los nombres correctos
-                resultadosFinales.push({
-                    IDVENTA: ventasResults[index].IDVENTA,
-                    Cliente: ventasResults[index].Cliente,
-                    ProductosComprados: ventasResults[index].ProductosComprados,
-                    PagoTotal: ventasResults[index].PagoTotal,
-                    Abono: ventasResults[index].Abono
-                });
-
-                // Si ya procesamos todas las ventas, enviar la respuesta
-                if (resultadosFinales.length === ventasResults.length) {
-                    console.log("Datos que se envían:", resultadosFinales);  // Aquí para ver los datos
-                    res.json(resultadosFinales);
-                }
-            });
-        };
-
-        // Iterar sobre todas las ventas y obtener los productos para cada una
-        ventasResults.forEach((venta, index) => {
-            obtenerProductos(venta.IDVENTA, index);
+        // Guardamos los resultados en un arreglo
+        const reportes = results.map(venta => {
+            return {
+                idVenta: venta.IDVENTA,
+                idCliente: venta.IDCLIENTE,
+                saldoAbonado: venta.SALDOABONADO,
+                ventaTotal: venta.VENTATOTAL,
+                fecha: venta.FECHA
+            };
         });
+
+        res.json(reportes); // Enviamos los datos procesados al frontend
     });
 });
+
+
 
 
 
