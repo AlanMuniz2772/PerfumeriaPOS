@@ -1,67 +1,84 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes Financieros - Tienda de Perfumes</title>
-    <link rel="stylesheet" href="../styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte Financiero - Ventas</title>
+  <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
-    <div class="reportes-container">
-        <h2>Reportes Financieros</h2>
-        <form id="reportesForm">
-            <label for="fechaInicio">Fecha de Inicio:</label>
-            <input type="date" id="fechaInicio" name="fechaInicio" required>
 
-            <label for="fechaFin">Fecha de Fin:</label>
-            <input type="date" id="fechaFin" name="fechaFin" required>
+  <a href="../index.html" class="back-button">← Regresar al índice</a>
 
-            <button type="submit">Generar Reporte</button>
-        </form>
+  <div class="container">
+    <h1>Reporte Financiero - Ventas</h1>
 
-        <h3>Ventas Registradas</h3>
-        <table id="reportesTable">
-            <thead>
-                <tr>
-                    <th>ID Venta</th>
-                    <th>ID Cliente</th>
-                    <th>Saldo Abonado</th>
-                    <th>Venta Total</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <!-- Formulario de búsqueda por fecha -->
+    <div class="form-group">
+      <label for="searchDate">Fecha:</label>
+      <input type="date" id="searchDate">
+      <button onclick="searchReport()" class="submit-btn">Generar Reporte</button>
     </div>
 
-    <script>
-        document.getElementById('reportesForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+    <!-- Resultados del reporte -->
+    <div id="reportResults" style="display:none;">
+      <h2>Ventas del día</h2>
+      <div id="reportList">
+        <!-- Los resultados se insertarán aquí -->
+      </div>
+    </div>
 
-            const fechaInicio = document.getElementById('fechaInicio').value;
-            const fechaFin = document.getElementById('fechaFin').value;
+  </div>
 
-            fetch(`/repfinanciero?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`)
-                .then(response => response.json())
-                .then(data => {
-                    const tbody = document.querySelector('#reportesTable tbody');
-                    tbody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos resultados
+  <script>
+    function searchReport() {
+      const searchDate = document.getElementById('searchDate').value;
+      console.log('Fecha seleccionada:', searchDate); 
+      if (!searchDate) {
+        alert("Por favor ingresa una fecha.");
+        return;
+      }
 
-                    // Recorrer el arreglo de datos y llenar la tabla
-                    data.forEach(venta => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${venta.idVenta}</td>
-                            <td>${venta.idCliente}</td>
-                            <td>${venta.saldoAbonado}</td>
-                            <td>${venta.ventaTotal}</td>
-                            <td>${venta.fecha}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-                })
-                .catch(error => console.error("Error al generar el reporte:", error));
+      fetch(`http://localhost:3000/reporte_financiero/${searchDate}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Error en la solicitud, estado: " + response.status);
+          }
+          return response.json(); // Parseamos la respuesta como JSON si es correcta
+        })
+        .then(data => {
+          console.log('Datos recibidos:', data);
+          const reportList = document.getElementById('reportList');
+
+          // Asegúrate de que la respuesta esté bien estructurada como arrays
+          const { idVenta, idCliente, idTipo, saldoAbonado, ventaTotal, fechaVenta } = data;
+
+          // Limpiar los resultados previos
+          reportList.innerHTML = '';
+
+          // Imprimir cada venta manualmente
+          for (let i = 0; i < idVenta.length; i++) {
+            const reportItem = `
+              <div class="report-item">
+                <p><strong>ID Venta:</strong> ${idVenta[i]}</p>
+                <p><strong>ID Cliente:</strong> ${idCliente[i]}</p>
+                <p><strong>ID Tipo:</strong> ${idTipo[i]}</p>
+                <p><strong>Saldo Abonado:</strong> $${parseFloat(saldoAbonado[i]).toFixed(2)}</p>
+                <p><strong>Total Venta:</strong> $${parseFloat(ventaTotal[i]).toFixed(2)}</p>
+                <p><strong>Fecha:</strong> ${fechaVenta[i]}</p>
+              </div>
+            `;
+            reportList.innerHTML += reportItem;
+          }
+
+          // Mostrar los resultados
+          document.getElementById('reportResults').style.display = 'block';
+        })
+        .catch(error => {
+          alert("Error al obtener el reporte: " + error);
         });
-    </script>
+    }
+  </script>
+
 </body>
 </html>

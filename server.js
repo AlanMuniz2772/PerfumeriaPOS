@@ -5,7 +5,7 @@ const mysql = require("mysql2");
 
 const app = express();
 app.use(express.json());
-//app.use(cors())
+
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -36,41 +36,35 @@ app.get("/productos", (req, res) => {
 });
 
 
-// GET para generar reportes financieros sin abreviaciones
-app.get("/repfinanciero", (req, res) => {
-    const { fechaInicio, fechaFin } = req.query;
+// Ruta para obtener el reporte financiero por fecha
+app.get("/reporte_financiero/:fecha", (req, res) => {
+    const { fecha } = req.params; // Fecha proporcionada por el usuario
+    
+    console.log('Fecha recibida:', fecha);  // Verifica que se está recibiendo la fecha
+    
+    const sql = "SELECT IDVENTA, IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, FECHA FROM VENTAS WHERE FECHA = ?";
+    
+    db.query(sql, [fecha], (err, results) => {
+      if (err) {
+        console.error("Error al obtener reporte financiero:", err);
+        return res.status(500).json({ error: "Error en el servidor" });
+      }
+      
+      if (results.length === 0) {
+        return res.status(404).json({ message: "No se encontraron ventas para la fecha proporcionada." });
+      }
 
-    if (!fechaInicio || !fechaFin) {
-        return res.status(400).json({ error: "Se requieren las fechas de inicio y fin" });
-    }
-
-    // Consulta SQL
-    const sql = `
-        SELECT * 
-        FROM VENTAS 
-        WHERE FECHA BETWEEN ? AND ?;
-    `;
-
-    db.query(sql, [fechaInicio, fechaFin], (err, results) => {
-        if (err) {
-            console.error("Error al obtener los reportes financieros:", err);
-            return res.status(500).json({ error: "Error en el servidor" });
-        }
-
-        // Guardamos los resultados en un arreglo
-        const reportes = results.map(venta => {
-            return {
-                idVenta: venta.IDVENTA,
-                idCliente: venta.IDCLIENTE,
-                saldoAbonado: venta.SALDOABONADO,
-                ventaTotal: venta.VENTATOTAL,
-                fecha: venta.FECHA
-            };
-        });
-
-        res.json(reportes); // Enviamos los datos procesados al frontend
+      // Enviar los resultados al frontend
+      res.json(results);
     });
 });
+
+
+
+  
+  
+
+  
 
 
 
