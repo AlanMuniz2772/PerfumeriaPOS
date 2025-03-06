@@ -37,114 +37,87 @@ app.get("/productos", (req, res) => {
 
 
 //Reporte financiero
-app.get("/reportes", async (req, res) => {
+//Reporte financiero
+app.get('/reportes', (req, res) => {
     const { inicio, fin } = req.query;
 
+    // Verificar que se pasaron las fechas
     if (!inicio || !fin) {
-        return res.status(400).json({ error: "Debe proporcionar un rango de fechas válido" });
+        return res.status(400).json({ error: 'Debe proporcionar un rango de fechas válido.' });
     }
 
-    //Consulta para obtener todas las ventas en el rango de fechas
-    const sqlVentas =  `SELECT * FROM VENTAS WHERE FECHA BETWEEN ? AND ?`;
+    // Consultas para obtener las ventas y los productos comprados por venta
+    const queryVentas = `
+        SELECT 
+            V.IDVENTA, 
+            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente,
+            V.VENTATOTAL AS PagoTotal,
+            COALESCE(CP.ABONO, 0) AS Abono
+        FROM 
+            VENTAS V
+        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
+        LEFT JOIN CONTROLPAGOCREDITO CP ON V.IDVENTA = CP.IDVENTA
+        WHERE V.FECHA BETWEEN ? AND ?
+        ORDER BY V.FECHA;
+    `;
 
-    try {
-        const ventas = await new Promise((resolve, reject) => {
-            db.query(sqlVentas, [inicio, fin], (err, results) => {
-                if (err) reject (err);
-                else resolve(results);
-            });
-        });
-
-        const reportes = [];
-
-        for(const venta of ventas ) {
-            const idVenta = venta.IDVENTA;
-
-            //Obtener nombre completo del cliente
-            const cliente = await new Promise((resolve, reject) => {
-                db.query(
-                    `SELECT NOMBRE, APATERNO, AMATERNO FROM CLIENTES WHERE IDCLIENTE = ?`,
-                    [venta.IDCLIENTE],
-                    (err, results) => {
-                        if (err) reject(err);
-                        else resolve(results[0]);
-                    }
-                );
-            });
-
-            //Obtener tipo de venta
-            const tipoVenta = await new Promise((resolve, reject) => {
-                db.query(
-                    `SELECT TIPOVENTA FROM TIPOVENTA WHERE IDTIPO = ?`,
-                    [venta.IDTIPO],
-                    (err, results) => {
-                        if (err) reject(err);
-                        else resolve(results[0].TIPOVENTA);
-                    }
-                );
-            });
-
-            //Obtener los productos comprados
-            const productos = await new Promise((resolve, reject) => {
-                db.query(
-                    `SELECT IDPRODUCTOS FROM VENTAS_has_PRODUCTOS WHERE IDVENTA = ?`,
-                    [idVenta],
-                    (err, results) => {
-                        if (err) reject(err);
-                        else resolve(results);
-                    }
-                );
-            });
-
-            const productosComprados = [];
-            for (const producto of productos ) {
-                const nombreProducto = await new Promise((resolve, reject) => {
-                    db.query (
-                        `SELECT NOMBRE FROM PRODUCTOS WHERE IDPRODUCTOS = ?`,
-                        [producto.IDPRODUCTOS],
-                        (err, results) => {
-                            if (err) reject(err);
-                            else resolve(results[0].NOMBRE);
-                        }
-                    );
-                });
-                productosComprados.push(nombreProducto);
-            }
-
-            //Verificar si la venta es de credito y obtener saldo pendiente
-            let saldoPendiente = 0;
-            if(venta.IDTIPO === 2) {
-                saldoPendiente = await new Promise((resolve, reject) => {
-                    db.query(
-                        `SELECT SALDOPENDIENTE FROM CONTROLPAGOCREDITO WHERE IDVENTA = ?`,
-                        [idVenta],
-                        (err, results) => {
-                            if (err) reject(err);
-                            else resolve(results.length ? results[0].SALDOPENDIENTE : 0);
-                        }
-                    );
-                });
-            }
-
-            //Agregar la informacion al reporte
-            reportes.push({
-                IDVENTA: idVenta,
-                Cliente: `${cliente.NOMBRE} ${cliente.APATERNO} ${cliente.AMATERNO}`,
-                ProductosComprados: productosComprados.join(", "),
-                PagoTotal: venta.VENTATOTAL,
-                TipoVenta: tipoVenta,
-                Abono: venta.SALDOABONADO,
-                SaldoPendiente: saldoPendiente
-            });
+    // Ejecutar la consulta de ventas
+    db.query(queryVentas, [inicio, fin], (err, ventasResults) => {
+        if (err) {
+            console.error('Error en la consulta de ventas:', err);
+            return res.status(500).json({ error: 'Error al obtener las ventas.' });
         }
 
-        res.json(reportes);   
+        if (ventasResults.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron ventas en este rango de fechas.' });
+        }
 
-    } catch(error) {
-        console.error("Error al obtener reportes:", error);
-        res.status(500).json({ error: "Error en el servidor al obtener reportes" });
-    }
-    
+        // Para cada venta, obtener los productos comprados
+        const resultadosFinales = [];
+
+        const obtenerProductos = (idVenta, index) => {
+            const queryProductos = `
+                SELECT GROUP_CONCAT(P.NOMBRE ORDER BY VP.IDPRODUCTOS) AS ProductosComprados
+                FROM VENTAS_has_PRODUCTOS VP
+                JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
+                WHERE VP.IDVENTA = ?
+            `;
+
+            db.query(queryProductos, [idVenta], (err, productosResults) => {
+                if (err) {
+                    console.error('Error al obtener los productos:', err);
+                    return res.status(500).json({ error: 'Error al obtener los productos.' });
+                }
+
+                // Asignar los productos a la venta correspondiente
+                if (productosResults.length > 0) {
+                    ventasResults[index].ProductosComprados = productosResults[0].ProductosComprados;
+                } else {
+                    ventasResults[index].ProductosComprados = '';
+                }
+
+                // Estructura final con los nombres correctos
+                resultadosFinales.push({
+                    IDVENTA: ventasResults[index].IDVENTA,
+                    Cliente: ventasResults[index].Cliente,
+                    ProductosComprados: ventasResults[index].ProductosComprados,
+                    PagoTotal: ventasResults[index].PagoTotal,
+                    Abono: ventasResults[index].Abono
+                });
+
+                // Si ya procesamos todas las ventas, enviar la respuesta
+                if (resultadosFinales.length === ventasResults.length) {
+                    console.log("Datos que se envían:", resultadosFinales);  // Aquí para ver los datos
+                    res.json(resultadosFinales);
+                }
+            });
+        };
+
+        // Iterar sobre todas las ventas y obtener los productos para cada una
+        ventasResults.forEach((venta, index) => {
+            obtenerProductos(venta.IDVENTA, index);
+        });
+    });
 });
 
 

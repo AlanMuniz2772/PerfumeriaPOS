@@ -5,83 +5,84 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reportes Financieros - Tienda de Perfumes</title>
   <link rel="stylesheet" href="../styles.css">
+  <script defer>
+    async function generarReporte() {
+        const inicio = document.getElementById("inicio").value;
+        const fin = document.getElementById("fin").value;
+        const mensaje = document.getElementById("mensaje");
+        const tbody = document.getElementById("reporte-body");
+        tbody.innerHTML = ""; // Limpiar tabla
+        
+        if (!inicio || !fin) {
+            mensaje.innerText = "Debe seleccionar un rango de fechas válido.";
+            return;
+        }
+
+        // Convertir las fechas al formato yyyy-mm-dd
+        const fechaInicio = new Date(inicio).toISOString().split('T')[0];
+        const fechaFin = new Date(fin).toISOString().split('T')[0];
+        
+        try {
+            const response = await fetch(`/reportes?inicio=${fechaInicio}&fin=${fechaFin}`);
+            const reportes = await response.json();
+            
+            console.log("Datos recibidos del backend:", reportes); // Ver los datos que llegan
+            
+            if (response.ok) {
+                // Si se obtiene el reporte con éxito
+                if (reportes.length > 0) {
+                    reportes.forEach(reporte => {
+                        const fila = `<tr>
+                            <td>${reporte.IDVENTA}</td>
+                            <td>${reporte.Cliente}</td>
+                            <td>${reporte.ProductosComprados}</td>
+                            <td>$${reporte.PagoTotal.toFixed(2)}</td>
+                            <td>$${reporte.Abono.toFixed(2)}</td>
+                        </tr>`;
+                        tbody.innerHTML += fila;
+                    });
+                    mensaje.innerText = "Reporte generado exitosamente.";
+                } else {
+                    mensaje.innerText = "No se encontraron ventas en este rango de fechas.";
+                }
+            } else {
+                mensaje.innerText = "Error al obtener el reporte.";
+            }
+        } catch (error) {
+            console.error("Error al generar reporte:", error);
+            mensaje.innerText = "Hubo un error al generar el reporte.";
+        }
+    }
+  </script>
 </head>
 <body>
   
-  <!-- Borre logo -->
   <a href="../index.html" class="back-button">← Regresar al índice</a>
 
-  <div class="form-container">
-    <h2>Generar Reporte Financiero</h2>
-    <form id="reporteForm">
-      <label for="fechaInicio">Fecha de Inicio:</label>
-      <input type="date" id="fechaInicio" name="fechaInicio" required>
+  <h1>Reporte Financiero</h1>
+  
+  <label for="inicio">Fecha de inicio:</label>
+  <input type="date" id="inicio">
+  
+  <label for="fin">Fecha de fin:</label>
+  <input type="date" id="fin">
+  
+  <button onclick="generarReporte()">Generar Reporte</button>
+  
+  <p id="mensaje" style="color: green;"></p>
+  
+  <table border="1">
+    <thead>
+      <tr>
+        <th>ID Venta</th>
+        <th>Cliente</th>
+        <th>Productos Comprados</th>
+        <th>Pago Total</th>
+        <th>Abono</th>
+      </tr>
+    </thead>
+    <tbody id="reporte-body"></tbody>
+  </table>
 
-      <label for="fechaFin">Fecha de Fin:</label>
-      <input type="date" id="fechaFin" name="fechaFin" required>
-
-      <button type="submit">Generar Reporte</button>
-    </form>
-  </div>
-
-  <div class="reportes-container" id="reportesContainer" style="display: none;">
-    <h3>Reporte de Ventas</h3>
-    <table id="reportesTabla">
-      <thead>
-        <tr>
-          <th>ID Venta</th> 
-          <th>Cliente</th>
-          <th>Fecha</th>
-          <th>Productos Comprados</th>
-          <th>Tipo de Venta</th>
-          <th>Total</th>
-          <th>Detalles de pago</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Aquí se agregarán los reportes dinámicamente -->
-      </tbody>
-    </table>
-  </div>
-
-  <script>
-    document.getElementById('reporteForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const fechaInicio = document.getElementById('fechaInicio').value;
-    const fechaFin = document.getElementById('fechaFin').value;
-
-    try {
-        const response = await fetch(`http://localhost:3000/reportes?inicio=${fechaInicio}&fin=${fechaFin}`);
-        const data = await response.json();
-
-        const reportesContainer = document.getElementById('reportesContainer');
-        const reportesTabla = document.getElementById('reportesTabla').querySelector('tbody');
-        reportesTabla.innerHTML = '';
-
-        if (data.length === 0) {
-            reportesTabla.innerHTML = '<tr><td colspan="7">No se encontraron datos para el rango de fechas seleccionado.</td></tr>';
-        } else {
-            data.forEach(reporte => {
-              const row = document.createElement('tr');
-
-              row.innerHTML = `
-                    <td>${reporte.IDVENTA}</td>
-                    <td>${reporte.Cliente}</td>
-                    <td>${reporte.ProductosComprados}</td>
-                    <td>$${reporte.PagoTotal.toFixed(2)}</td>
-                    <td>${reporte.TipoVenta}</td>
-                    <td>$${reporte.Abono.toFixed(2)}</td>
-                    <td>$${reporte.SaldoPendiente.toFixed(2)}</td>
-                `;
-                reportesTabla.appendChild(row);
-            });
-        }
-        reportesContainer.style.display = 'block';
-    } catch (error) {
-        console.error('Error al generar el reporte:', error);
-    }
-  });
-  </script>
 </body>
 </html>
