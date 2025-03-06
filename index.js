@@ -43,6 +43,7 @@ function createWindow() {
     let win = new BrowserWindow({
         width: 800,
         height: 600,
+        fullscreen: true,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"), // Usar un script de preload
             contextIsolation: true, // Asegura que el contexto sea seguro
