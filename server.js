@@ -37,22 +37,21 @@ app.get("/productos", (req, res) => {
 
 
 // Ruta para obtener el reporte financiero por fecha
-app.get("/reporte_financiero/:fecha", (req, res) => {
-    const { fecha } = req.params; // Fecha proporcionada por el usuario
+app.get("/reporte_financiero", (req, res) => {
+    const { fechaInicial, fechaFinal } = req.query; // Fechas proporcionadas por el usuario
     
-    console.log('Fecha recibida:', fecha);  // Verifica que se está recibiendo la fecha
+    console.log('Fechas recibidas:', fechaInicial, fechaFinal);  // Verifica que se están recibiendo las fechas
     
+    const sql = "SELECT * FROM VENTAS WHERE FECHA BETWEEN ? AND ?";
     
-    const sql = "SELECT * FECHA FROM VENTAS WHERE FECHA = ?";
-    
-    db.query(sql, [fecha], (err, results) => {
+    db.query(sql, [fechaInicial, fechaFinal], (err, results) => {
       if (err) {
         console.error("Error al obtener reporte financiero:", err);
         return res.status(500).json({ error: "Error en el servidor" });
       }
       
       if (results.length === 0) {
-        return res.status(404).json({ message: "No se encontraron ventas para la fecha proporcionada." });
+        return res.status(404).json({ message: "No se encontraron ventas para el rango de fechas proporcionado." });
       }
 
       // Enviar los resultados al frontend

@@ -15,8 +15,10 @@
 
     <!-- Formulario de búsqueda por fecha -->
     <div class="form-group">
-      <label for="searchDate">Fecha:</label>
-      <input type="date" id="searchDate">
+      <label for="fechaInicial">Fecha inicial:</label>
+      <input type="date" id="fechaInicial">
+      <label for="fechaFinal">Fecha final:</label>
+      <input type="date" id="fechaFinal">
       <button onclick="searchReport()" class="submit-btn">Generar Reporte</button>
     </div>
 
@@ -27,6 +29,7 @@
         <thead>
           <tr>
             <th>Id</th>
+            <th>Fecha</th>
             <th>Id Cliente</th>
             <th>Id tipo venta</th>
             <th>Saldo Abonado</th>
@@ -44,18 +47,22 @@
 
   <script>
     function searchReport() {
-      const searchDate = document.getElementById('searchDate').value;
-      console.log('Fecha seleccionada:', searchDate); 
-      if (!searchDate) {
-      alert("Por favor ingresa una fecha.");
-      return;
+      const fechaInicial= document.getElementById('fechaInicial').value;
+      let fechaFinal= document.getElementById('fechaFinal').value;
+   
+      if (!fechaInicial) {
+        alert("Por favor ingresa una fecha.");
+        return;
+      }
+      if (!fechaFinal) {
+        fechaFinal = new Date().toISOString().split('T')[0];
       }
 
       // Limpiar los datos previos de la tabla
       const reportList = document.getElementById('reportList');
       reportList.innerHTML = ''; 
 
-      fetch(`http://localhost:3000/reporte_financiero/${searchDate}`)
+      fetch(`http://localhost:3000/reporte_financiero?fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}`)
       .then(response => {
         if (!response.ok) {
         throw new Error("Error en la solicitud, estado: " + response.status);
@@ -69,8 +76,9 @@
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${venta.IDVENTA}</td>
+            <td>${new Date(venta.FECHA).toLocaleDateString()}</td>
           <td>${venta.IDCLIENTE}</td>
-          <td>${venta.IDTIPO}</td>
+          <td>${venta.IDTIPO === 1 ? 'Contado' : 'Crédito'}</td>
           <td>${venta.SALDOABONADO}</td>
           <td>${venta.VENTATOTAL}</td>
         `;
