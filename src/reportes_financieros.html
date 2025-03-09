@@ -40,7 +40,10 @@
           <!-- Los resultados se insertarán aquí -->
         </tbody>
       </table>
-      
+
+      <div id="totalVentasContainer" style="margin-top: 20px; font-size: 18px; font-weight: bold;">
+        Venta Total: <span id="totalVentas">0.00</span>
+      </div>
     </div>
 
   </div>
@@ -87,6 +90,15 @@
 
         // Mostrar los resultados
         document.getElementById('reportResults').style.display = 'block';
+
+        //Calcular la suma acumulativa
+        const totalVentas = data.reduce((sum, venta) => sum + parseFloat(venta.VENTATOTAL),0);
+
+        //Mostrar la suma
+        document.getElementById('totalVentas').textContent = totalVentas.toFixed(2);
+
+        //Mostrar el contenedor 
+        document.getElementById('totalVentasContainer').style.display = 'block';
       })
       .catch(error => {
         alert("Error al obtener el reporte: " + error);
