@@ -23,10 +23,12 @@
         <tr><td><strong>Nombre:</strong></td><td><span id="clienteNombreInfo"></span></td></tr>
         <tr><td><strong>Dirección:</strong></td><td><span id="clienteDireccion"></span></td></tr>
         <tr><td><strong>Teléfono:</strong></td><td><span id="clienteTelefono"></span></td></tr>
+        <tr><td colspan="2"><a href="../src/registrar_venta.html?idCliente=" id="registrarVentaLink" class="back-button">Registrar venta</a></td></tr>
       </table>
     </div>
 
     <script>
+      let clienteId = null;
       let clientesData = [];
 
       // Obtener clientes de la API
@@ -71,7 +73,7 @@
         document.getElementById("clienteNombreInfo").textContent = cliente.NOMBRE;
         document.getElementById("clienteDireccion").textContent = cliente.COLONIA;
         document.getElementById("clienteTelefono").textContent = cliente.TELEFONO;
-
+        document.getElementById("registrarVentaLink").href += cliente.IDCLIENTE;
         document.getElementById("clienteInfo").style.display = "block";
         document.getElementById("listaClientes").style.display = "none";
       }
