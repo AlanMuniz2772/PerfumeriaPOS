@@ -1,14 +1,18 @@
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Registrar venta - Tienda de Perfumes</title>
-        <link rel="stylesheet" href="../styles.css">
-    </head>
-    <body>
-        <div class="venta-container">
-            <h2>Registrar Venta</h2>
-            <form id="ventaForm">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Venta - Tienda de Perfumes</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <a href="../src/control_ventas.html" class="back-button">← Regresar a control ventas</a>
+
+    <div class="venta-container">
+        <h2>Registrar Venta</h2>
+
+        <form id="ventaForm">
 
             <label for="tipoVenta">Tipo de Venta:</label>
             <select id="tipoVenta" name="tipoVenta" required>
@@ -22,8 +26,6 @@
             </div>
 
             <h3>Agregar Productos</h3>
-            <div id="productosVendidos"></div>
-
             <label for="productoSelect">Seleccionar Producto:</label>
             <select id="productoSelect"></select>
 
@@ -32,35 +34,151 @@
 
             <button type="button" id="agregarProductoBtn">Agregar Producto</button>
 
+            <h3>Productos Vendidos</h3>
+            <div id="productosVendidos"></div>
+
             <h3>Monto Total: $<span id="montoTotal">0.00</span></h3>
 
             <button type="submit">Finalizar Venta</button>
-            </form>
-        </div>   
-    </body>
+        </form>
+    </div>
+
+    <script>
+        let clienteID;
+        let productosDisponibles = [];
+        let productosSeleccionados = [];
+        let montoTotal = 0;
+
+        // Obtener ID del cliente desde la URL
+        function obtenerClienteID() {
+            const params = new URLSearchParams(window.location.search);
+            clienteID = params.get("idCliente");
+            
+            if (!clienteID) {
+                alert("Error: No se recibió un ID de cliente.");
+                window.location.href = "../index.html"; 
+            }
+        }
+
+        // Obtener productos desde el servidor
+        function cargarProductos() {
+            fetch("http://localhost:3000/productos")
+                .then(response => response.json())
+                .then(data => {
+                    productosDisponibles = data;
+                    const productoSelect = document.getElementById("productoSelect");
+                    data.forEach(producto => {
+                        let option = document.createElement("option");
+                        option.value = producto.IDPRODUCTOS;
+                        option.textContent = `${producto.NOMBRE} - $${producto.PRECIOVENTA}`;
+                        productoSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error("Error al obtener productos:", error));
+        }
+
+        // Agregar producto a la lista de productos vendidos
+        document.getElementById("agregarProductoBtn").addEventListener("click", () => {
+            console.log("Agregando producto...");
+            const cantidad = parseInt(document.getElementById("cantidad").value);
+            const productoID = parseInt(document.getElementById("productoSelect").value);
+
+            if (cantidad <= 0) {
+            alert("Ingrese una cantidad válida.");
+            return;
+            }
+
+            const producto = productosDisponibles.find(p => p.IDPRODUCTOS === productoID);
+            if (!producto) return;
+
+            const productoExistente = productosSeleccionados.find(p => p.IDPRODUCTOS === productoID);
+            if (productoExistente) {
+            productoExistente.CANTPRODUCTOS = cantidad;
+            } else {
+            productosSeleccionados.push({ IDPRODUCTOS: productoID, CANTPRODUCTOS: cantidad });
+            }
+
+            // Regenerar la vista
+            const productosVendidos = document.getElementById("productosVendidos");
+            productosVendidos.innerHTML = "";
+            montoTotal = 0;
+
+            productosSeleccionados.forEach(p => {
+            const productoInfo = productosDisponibles.find(prod => prod.IDPRODUCTOS === p.IDPRODUCTOS);
+            const item = document.createElement("p");
+            item.textContent = `${productoInfo.NOMBRE} x${p.CANTPRODUCTOS} - $${(productoInfo.PRECIOVENTA * p.CANTPRODUCTOS).toFixed(2)}`;
+            productosVendidos.appendChild(item);
+            montoTotal += productoInfo.PRECIOVENTA * p.CANTPRODUCTOS;
+            });
+
+            // Actualizar monto total
+            document.getElementById("montoTotal").textContent = montoTotal.toFixed(2);
+        });
+
+
+        // Manejo del tipo de venta
+        document.getElementById("tipoVenta").addEventListener("change", (e) => {
+            const creditoSection = document.getElementById("creditoSection");
+            creditoSection.style.display = e.target.value === "credito" ? "block" : "none";
+        });
+
+        // Enviar la venta al servidor
+        document.getElementById("ventaForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            if (productosSeleccionados.length === 0) {
+                alert("Debe agregar al menos un producto.");
+                return;
+            }
+
+            const tipoVenta = document.getElementById("tipoVenta").value;
+            const importeInicial = tipoVenta === "credito" ? parseFloat(document.getElementById("importeInicial").value) || 0 : montoTotal;
+            
+            if (importeInicial > montoTotal) {
+                alert("El importe inicial debe ser igual o menor al monto total.");
+                return;
+            }
+            const venta = {
+                IDCLIENTE: parseInt(clienteID),
+                IDTIPO: tipoVenta === "credito" ? 2 : 1, 
+                SALDOABONADO: importeInicial,
+                VENTATOTAL: montoTotal,
+                productos: productosSeleccionados
+            };
+
+            console.log(venta);
+
+            fetch("http://localhost:3000/registrar_venta", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(venta) // Asegúrate de que `venta` esté correctamente definido
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Si la respuesta no es exitosa (status 4xx o 5xx), lanzar un error
+                    return response.json().then(err => {
+                        throw new Error(err.error || "Hubo un error al registrar la venta.");
+                    });
+                }
+                return response.json(); // Si la respuesta es exitosa, devolver los datos JSON
+            })
+            .then(data => {
+                // Mostrar mensaje de éxito
+                alert(data.mensaje || "Venta registrada correctamente.");
+                // Redirigir o realizar otras acciones
+                // window.location.href = "../index.html"; 
+            })
+            .catch(error => {
+                // Mostrar mensaje de error
+                console.error("Error al registrar la venta:", error);
+                alert(error.message || "Hubo un error al registrar la venta.");
+            });
+        });
+
+        // Inicialización
+        obtenerClienteID();
+        cargarProductos();
+    </script>
+
+</body>
 </html>
-
-<script>
-    const venta = {
-    IDCLIENTE: 1,
-    IDTIPO: 2,
-    SALDOABONADO: 500.00,
-    VENTATOTAL: 1500.00,
-    productos: [
-        { IDPRODUCTOS: 1, CANTPRODUCTOS: 2 },
-        { IDPRODUCTOS: 3, CANTPRODUCTOS: 1 }
-    ]
-};
-
-fetch("http://localhost:3000/registrar_venta", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify(venta)
-})
-.then(response => response.json())
-.then(data => console.log("Venta registrada:", data))
-.catch(error => console.error("Error al registrar la venta:", error));
-
-</script>

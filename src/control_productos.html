@@ -25,6 +25,7 @@
           <th>Descripcion</th>
           <th>Precio de compra</th>
           <th>Precio de venta</th>
+          <th>Cantidad</th>
         </tr>
       </thead>
       <tbody id="productosTable"></tbody>
@@ -62,6 +63,7 @@
           <td>${producto.DESCRIPCION}</td>
           <td>${producto.PRECIOCOMPRA}</td>
           <td>${producto.PRECIOVENTA}</td>
+          <td>${producto.CANTIDAD}</td>
         `;
         tableBody.appendChild(row);
       });

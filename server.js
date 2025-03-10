@@ -5,7 +5,7 @@ const mysql = require("mysql2");
 
 const app = express();
 app.use(express.json());
-//app.use(cors())
+
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -71,75 +71,37 @@ app.get("/productos", (req, res) => {
 });
 
 
-//Reporte financiero
-app.get("/reportes", async (req, res) => {
-    const { inicio, fin } = req.query;
+// Ruta para obtener el reporte financiero por fecha
+app.get("/reporte_financiero", (req, res) => {
+    const { fechaInicial, fechaFinal } = req.query; // Fechas proporcionadas por el usuario
+    
+    console.log('Fechas recibidas:', fechaInicial, fechaFinal);  // Verifica que se están recibiendo las fechas
+    
+    const sql = "SELECT * FROM VENTAS WHERE FECHA BETWEEN ? AND ?";
+    
+    db.query(sql, [fechaInicial, fechaFinal], (err, results) => {
+      if (err) {
+        console.error("Error al obtener reporte financiero:", err);
+        return res.status(500).json({ error: "Error en el servidor" });
+      }
+      
+      if (results.length === 0) {
+        return res.status(404).json({ message: "No se encontraron ventas para el rango de fechas proporcionado." });
+      }
 
-    if (!inicio || !fin) {
-        return res.status(400).json({ error: "Debe proporcionar un rango de fechas válido" });
-    }
-
-    const sqlContado = `
-        SELECT 
-            V.IDVENTA, 
-            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente, 
-            DATE_FORMAT(V.FECHA, '%Y-%m-%d') AS FechaVenta,
-            GROUP_CONCAT(P.NOMBRE SEPARATOR ', ') AS ProductosComprados,
-            'Contado' AS TipoVenta,
-            V.VENTATOTAL AS PagoTotal,
-            0 AS AbonoInicial,
-            0 AS SaldoPendiente
-        FROM VENTAS V
-        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
-        LEFT JOIN VENTAS_has_PRODUCTOS VP ON V.IDVENTA = VP.IDVENTA
-        LEFT JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
-        WHERE V.IDTIPO = 1 AND V.FECHA BETWEEN ? AND ?
-        GROUP BY V.IDVENTA;
-    `;
-
-    const sqlCredito = `
-        SELECT 
-            V.IDVENTA, 
-            CONCAT(C.NOMBRE, ' ', C.APATERNO, ' ', C.AMATERNO) AS Cliente, 
-            DATE_FORMAT(V.FECHA, '%Y-%m-%d') AS FechaVenta,
-            GROUP_CONCAT(P.NOMBRE SEPARATOR ', ') AS ProductosComprados,
-            'Credito' AS TipoVenta,
-            V.VENTATOTAL AS PagoTotal,
-            COALESCE(CC.ABONO, 0) AS AbonoInicial,
-            COALESCE(CC.SALDOPENDIENTE, 0) AS SaldoPendiente
-        FROM VENTAS V
-        JOIN CLIENTES C ON V.IDCLIENTE = C.IDCLIENTE
-        LEFT JOIN VENTAS_has_PRODUCTOS VP ON V.IDVENTA = VP.IDVENTA
-        LEFT JOIN PRODUCTOS P ON VP.IDPRODUCTOS = P.IDPRODUCTOS
-        LEFT JOIN CONTROLPAGOCREDITO CC ON V.IDVENTA = CC.IDVENTA
-        WHERE V.IDTIPO = 2 AND V.FECHA BETWEEN ? AND ?
-        GROUP BY V.IDVENTA;
-    `;
-
-    try {
-        const [ventasContado, ventasCredito] = await Promise.all([
-            new Promise((resolve, reject) => {
-                db.query(sqlContado, [inicio, fin], (err, results) => {
-                    if (err) reject(err);
-                    else resolve(results);
-                });
-            }),
-            new Promise((resolve, reject) => {
-                db.query(sqlCredito, [inicio, fin], (err, results) => {
-                    if (err) reject(err);
-                    else resolve(results);
-                });
-            })
-        ]);
-
-        const reportes = [...ventasContado, ...ventasCredito].sort((a, b) => new Date(b.FechaVenta) - new Date(a.FechaVenta));
-
-        res.json(reportes);
-    } catch (error) {
-        console.error("Error al obtener reportes:", error);
-        res.status(500).json({ error: "Error en el servidor al obtener reportes" });
-    }
+      // Enviar los resultados al frontend
+      res.json(results);
+    });
 });
+
+
+
+  
+  
+
+  
+
+
 
 
 
@@ -197,69 +159,114 @@ app.post("/registrar_producto", (req, res) => {
 });
 
 
-app.post("/registrar_venta", (req, res) => {
+const registrarVenta = (req, res) => {
     const { IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, productos } = req.body;
 
-    if (!productos || productos.length === 0) {
-        return res.status(400).json({ error: "Debe haber al menos un producto en la venta" });
+    console.log("Datos de la venta:", req.body);
+    if (!IDCLIENTE || !IDTIPO || SALDOABONADO === undefined || VENTATOTAL === undefined) {
+        return res.status(400).json({ error: "Faltan campos obligatorios en la solicitud" });
+    }
+
+    
+
+    for (const producto of productos) {
+        if (!producto.IDPRODUCTOS || !producto.CANTPRODUCTOS) {
+            return res.status(400).json({ error: "Cada producto debe tener 'IDPRODUCTOS' y 'CANTPRODUCTOS'" });
+        }
     }
 
     db.beginTransaction(err => {
         if (err) {
+            console.error("Error al iniciar la transacción:", err);
             return res.status(500).json({ error: "Error al iniciar la transacción" });
         }
 
-        // Insertar en VENTAS
-        const sqlVenta = "INSERT INTO VENTAS (IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, FECHA) VALUES (?, ?, ?, ?, NOW())";
-        db.query(sqlVenta, [IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL], (err, result) => {
+        insertarVenta(IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, productos, res);
+    });
+};
+
+const insertarVenta = (IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, productos, res) => {
+    const sqlVenta = "INSERT INTO VENTAS (IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL, FECHA) VALUES (?, ?, ?, ?, NOW())";
+    db.query(sqlVenta, [IDCLIENTE, IDTIPO, SALDOABONADO, VENTATOTAL], (err, result) => {
+        if (err) {
+            console.error("Error al registrar la venta:", err);
+            return db.rollback(() => {
+                res.status(500).json({ error: "Error al registrar la venta", detalles: err.message });
+            });
+        }
+
+        const IDVENTA = result.insertId;
+        insertarDetalleVenta(IDVENTA, productos, res);
+    });
+};
+
+const insertarDetalleVenta = (IDVENTA, productos, res) => {
+    const sqlDetalle = "INSERT INTO VENTAS_has_PRODUCTOS (IDVENTA, IDPRODUCTOS, CANTPRODUCTOS) VALUES ?";
+    const valoresDetalle = productos.map(p => [IDVENTA, p.IDPRODUCTOS, p.CANTPRODUCTOS]);
+
+    db.query(sqlDetalle, [valoresDetalle], (err) => {
+        if (err) {
+            console.error("Error al registrar los productos en la venta:", err);
+            return db.rollback(() => {
+                res.status(500).json({ error: "Error al registrar los productos en la venta", detalles: err.message });
+            });
+        }
+
+        actualizarStock(productos, IDVENTA, res);
+    });
+};
+
+const actualizarStock = (productos, IDVENTA, res) => {
+    // Primero, verificar si hay suficiente stock para cada producto
+    const sqlVerificarStock = "SELECT CANTIDAD FROM PRODUCTOS WHERE IDPRODUCTOS = ?";
+    const verificaciones = productos.map(p => new Promise((resolve, reject) => {
+        db.query(sqlVerificarStock, [p.IDPRODUCTOS], (err, result) => {
             if (err) {
-                return db.rollback(() => {
-                    res.status(500).json({ error: "Error al registrar la venta" });
-                });
+                reject(err);
+            } else {
+                const stockActual = result[0].CANTIDAD;
+                if (stockActual < p.CANTPRODUCTOS) {
+                    reject(new Error(`No hay suficiente stock para el producto ${p.IDPRODUCTOS}. Stock actual: ${stockActual}, cantidad solicitada: ${p.CANTPRODUCTOS}`));
+                } else {
+                    resolve();
+                }
             }
+        });
+    }));
 
-            const IDVENTA = result.insertId;
+    // Si todas las verificaciones son exitosas, proceder con la actualización del stock
+    Promise.all(verificaciones)
+        .then(() => {
+            const sqlActualizarStock = "UPDATE PRODUCTOS SET CANTIDAD = CANTIDAD - ? WHERE IDPRODUCTOS = ?";
+            const queries = productos.map(p => new Promise((resolve, reject) => {
+                db.query(sqlActualizarStock, [p.CANTPRODUCTOS, p.IDPRODUCTOS], (err, result) => {
+                    if (err) reject(err);
+                    else resolve(result);
+                });
+            }));
 
-            // Insertar en VENTAS_has_PRODUCTOS y actualizar stock
-            const sqlDetalle = "INSERT INTO VENTAS_has_PRODUCTOS (IDVENTA, IDPRODUCTOS, CANTPRODUCTOS) VALUES ?";
-            const valoresDetalle = productos.map(p => [IDVENTA, p.IDPRODUCTOS, p.CANTPRODUCTOS]);
-
-            db.query(sqlDetalle, [valoresDetalle], (err) => {
+            return Promise.all(queries);
+        })
+        .then(() => {
+            db.commit(err => {
                 if (err) {
+                    console.error("Error al confirmar la transacción:", err);
                     return db.rollback(() => {
-                        res.status(500).json({ error: "Error al registrar los productos en la venta" });
+                        res.status(500).json({ error: "Error al confirmar la transacción", detalles: err.message });
                     });
                 }
-
-                // Actualizar stock en PRODUCTOS
-                const sqlActualizarStock = "UPDATE PRODUCTOS SET CANTIDAD = CANTIDAD - ? WHERE IDPRODUCTOS = ?";
-                const queries = productos.map(p => new Promise((resolve, reject) => {
-                    db.query(sqlActualizarStock, [p.CANTPRODUCTOS, p.IDPRODUCTOS], (err, result) => {
-                        if (err) reject(err);
-                        else resolve(result);
-                    });
-                }));
-
-                Promise.all(queries)
-                    .then(() => {
-                        db.commit(err => {
-                            if (err) {
-                                return db.rollback(() => {
-                                    res.status(500).json({ error: "Error al confirmar la transacción" });
-                                });
-                            }
-                            res.json({ mensaje: "Venta registrada correctamente", IDVENTA });
-                        });
-                    })
-                    .catch(err => {
-                        db.rollback(() => {
-                            res.status(500).json({ error: "Error al actualizar el stock" });
-                        });
-                    });
+                res.json({ mensaje: "Venta registrada correctamente", IDVENTA });
+            });
+        })
+        .catch(err => {
+            console.error("Error en la verificación o actualización del stock:", err);
+            db.rollback(() => {
+                res.status(400).json({ error: "Error en el stock", detalles: err.message });
             });
         });
-    });
-});
+};
+
+app.post("/registrar_venta", registrarVenta);
 
 app.post("/registrar_abono", (req, res) => {
     const { idVenta, monto } = req.body;

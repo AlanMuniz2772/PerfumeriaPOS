@@ -3,86 +3,109 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reportes Financieros - Tienda de Perfumes</title>
+  <title>Reporte Financiero - Ventas</title>
   <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
-  
-  <!-- Borre logo -->
+
   <a href="../index.html" class="back-button">← Regresar al índice</a>
 
-  <div class="form-container">
-    <h2>Generar Reporte Financiero</h2>
-    <form id="reporteForm">
-      <label for="fechaInicio">Fecha de Inicio:</label>
-      <input type="date" id="fechaInicio" name="fechaInicio" required>
+  <div class="container">
+    <h1>Reporte Financiero - Ventas</h1>
 
-      <label for="fechaFin">Fecha de Fin:</label>
-      <input type="date" id="fechaFin" name="fechaFin" required>
+    <!-- Formulario de búsqueda por fecha -->
+    <div class="form-group">
+      <label for="fechaInicial">Fecha inicial:</label>
+      <input type="date" id="fechaInicial">
+      <label for="fechaFinal">Fecha final:</label>
+      <input type="date" id="fechaFinal">
+      <button onclick="searchReport()" class="submit-btn">Generar Reporte</button>
+    </div>
 
-      <button type="submit">Generar Reporte</button>
-    </form>
-  </div>
+    <!-- Resultados del reporte -->
+    <div id="reportResults" style="display:none;">
+      <h2>Ventas del día</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Fecha</th>
+            <th>Id Cliente</th>
+            <th>Id tipo venta</th>
+            <th>Saldo Abonado</th>
+            <th>Venta Total</th>
+          </tr>
+        </thead>
+        <tbody id="reportList">
+          <!-- Los resultados se insertarán aquí -->
+        </tbody>
+      </table>
 
-  <div class="reportes-container" id="reportesContainer" style="display: none;">
-    <h3>Reporte de Ventas</h3>
-    <table id="reportesTabla">
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th>Fecha</th>
-          <th>Productos Comprados</th>
-          <th>Tipo de Venta</th>
-          <th>Total</th>
-          <th>Detalles de pago</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Aquí se agregarán los reportes dinámicamente -->
-      </tbody>
-    </table>
+      <div id="totalVentasContainer" style="margin-top: 20px; font-size: 18px; font-weight: bold;">
+        Venta Total: <span id="totalVentas">0.00</span>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    document.getElementById('reporteForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+    function searchReport() {
+      const fechaInicial= document.getElementById('fechaInicial').value;
+      let fechaFinal= document.getElementById('fechaFinal').value;
+   
+      if (!fechaInicial) {
+        alert("Por favor ingresa una fecha.");
+        return;
+      }
+      if (!fechaFinal) {
+        fechaFinal = new Date().toISOString().split('T')[0];
+      }
 
-    const fechaInicio = document.getElementById('fechaInicio').value;
-    const fechaFin = document.getElementById('fechaFin').value;
+      // Limpiar los datos previos de la tabla
+      const reportList = document.getElementById('reportList');
+      reportList.innerHTML = ''; 
 
-    try {
-        const response = await fetch(`http://localhost:3000/reportes?inicio=${fechaInicio}&fin=${fechaFin}`);
-        const data = await response.json();
-
-        const reportesContainer = document.getElementById('reportesContainer');
-        const reportesTabla = document.getElementById('reportesTabla').querySelector('tbody');
-        reportesTabla.innerHTML = '';
-
-        if (data.length === 0) {
-            reportesTabla.innerHTML = '<tr><td colspan="6">No se encontraron datos para el rango de fechas seleccionado.</td></tr>';
-        } else {
-            data.forEach(reporte => {
-                const row = document.createElement('tr');
-                let detallesPago = reporte.TipoVenta === 'Credito' 
-                    ? `Abono: $${reporte.AbonoInicial.toFixed(2)} / Saldo: $${reporte.SaldoPendiente.toFixed(2)}` 
-                    : `$${reporte.PagoTotal.toFixed(2)}`;
-
-                row.innerHTML = `
-                    <td>${reporte.Cliente}</td>
-                    <td>${reporte.FechaVenta}</td>
-                    <td>${reporte.ProductosComprados}</td>
-                    <td>${reporte.TipoVenta}</td>
-                    <td>$${reporte.PagoTotal.toFixed(2)}</td>
-                    <td>${detallesPago}</td>
-                `;
-                reportesTabla.appendChild(row);
-            });
+      fetch(`http://localhost:3000/reporte_financiero?fechaInicial=${fechaInicial}&fechaFinal=${fechaFinal}`)
+      .then(response => {
+        if (!response.ok) {
+        throw new Error("Error en la solicitud, estado: " + response.status);
         }
-        reportesContainer.style.display = 'block';
-    } catch (error) {
-        console.error('Error al generar el reporte:', error);
+        return response.json(); // Parseamos la respuesta como JSON si es correcta
+      })
+      .then(data => {
+        console.log('Datos recibidos:', data);
+
+        data.forEach(venta => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${venta.IDVENTA}</td>
+            <td>${new Date(venta.FECHA).toLocaleDateString()}</td>
+          <td>${venta.IDCLIENTE}</td>
+          <td>${venta.IDTIPO === 1 ? 'Contado' : 'Crédito'}</td>
+          <td>${venta.SALDOABONADO}</td>
+          <td>${venta.VENTATOTAL}</td>
+        `;
+        reportList.appendChild(row);
+        });
+
+        // Mostrar los resultados
+        document.getElementById('reportResults').style.display = 'block';
+
+        //Calcular la suma acumulativa
+        const totalVentas = data.reduce((sum, venta) => sum + parseFloat(venta.VENTATOTAL),0);
+
+        //Mostrar la suma
+        document.getElementById('totalVentas').textContent = totalVentas.toFixed(2);
+
+        //Mostrar el contenedor 
+        document.getElementById('totalVentasContainer').style.display = 'block';
+      })
+      .catch(error => {
+        alert("Error al obtener el reporte: " + error);
+        console.log('Error al obtener el reporte:', error);
+      });
     }
-  });
   </script>
+
 </body>
 </html>
