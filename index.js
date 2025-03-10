@@ -42,6 +42,7 @@ function createWindow() {
     let win = new BrowserWindow({
         width: 800,
         height: 600,
+        fullscreen: true,
         webPreferences: {
             nodeIntegration: true,
         },

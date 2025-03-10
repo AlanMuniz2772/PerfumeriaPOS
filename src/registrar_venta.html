@@ -91,11 +91,11 @@
             const producto = productosDisponibles.find(p => p.IDPRODUCTOS === productoID);
             if (!producto) return;
 
-            const productoExistente = productosSeleccionados.find(p => p.IDPRODUCTO === productoID);
+            const productoExistente = productosSeleccionados.find(p => p.IDPRODUCTOS === productoID);
             if (productoExistente) {
             productoExistente.CANTPRODUCTOS = cantidad;
             } else {
-            productosSeleccionados.push({ IDPRODUCTO: productoID, CANTPRODUCTOS: cantidad });
+            productosSeleccionados.push({ IDPRODUCTOS: productoID, CANTPRODUCTOS: cantidad });
             }
 
             // Regenerar la vista
@@ -104,7 +104,7 @@
             montoTotal = 0;
 
             productosSeleccionados.forEach(p => {
-            const productoInfo = productosDisponibles.find(prod => prod.IDPRODUCTOS === p.IDPRODUCTO);
+            const productoInfo = productosDisponibles.find(prod => prod.IDPRODUCTOS === p.IDPRODUCTOS);
             const item = document.createElement("p");
             item.textContent = `${productoInfo.NOMBRE} x${p.CANTPRODUCTOS} - $${(productoInfo.PRECIOVENTA * p.CANTPRODUCTOS).toFixed(2)}`;
             productosVendidos.appendChild(item);
@@ -149,18 +149,29 @@
             console.log(venta);
 
             fetch("http://localhost:3000/registrar_venta", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(venta)
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(venta) // Asegúrate de que `venta` esté correctamente definido
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    // Si la respuesta no es exitosa (status 4xx o 5xx), lanzar un error
+                    return response.json().then(err => {
+                        throw new Error(err.error || "Hubo un error al registrar la venta.");
+                    });
+                }
+                return response.json(); // Si la respuesta es exitosa, devolver los datos JSON
+            })
             .then(data => {
-                alert("Venta registrada correctamente.");
+                // Mostrar mensaje de éxito
+                alert(data.mensaje || "Venta registrada correctamente.");
+                // Redirigir o realizar otras acciones
                 // window.location.href = "../index.html"; 
             })
             .catch(error => {
+                // Mostrar mensaje de error
                 console.error("Error al registrar la venta:", error);
-                alert("Hubo un error al registrar la venta.");
+                alert(error.message || "Hubo un error al registrar la venta.");
             });
         });
 
